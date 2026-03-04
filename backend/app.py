@@ -100,6 +100,37 @@ def submit_score():
         "is_high_score": is_high_score
     })
 
+# ④ ランキング取得API（DB参照）
+@app.route('/api/game/ranking', methods=['GET'])
+def get_ranking():
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # スコアが高い順（DESC）にトップ10件を取得するSQL
+    c.execute('''
+        SELECT user_id, score, created_at 
+        FROM scores 
+        ORDER BY score DESC 
+        LIMIT 10
+    ''')
+    ranking_data = c.fetchall()
+    conn.close()
+
+    # フロントエンドが扱いやすいように、順位（rank）をつけてリストにまとめる
+    ranking_list = []
+    for rank, row in enumerate(ranking_data, start=1):
+        ranking_list.append({
+            "rank": rank,
+            "user_id": row["user_id"],
+            "score": row["score"],
+            "date": row["created_at"]
+        })
+
+    return jsonify({
+        "status": "success",
+        "ranking": ranking_list
+    })
+
 if __name__ == '__main__':
     # サーバーをポート5000で起動
     app.run(debug=True, port=5000)
