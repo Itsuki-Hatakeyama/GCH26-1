@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const FOCUS_TIME = 5; // 開発用：集中5秒
-  const BREAK_TIME = 3; // 開発用：休憩3秒
+  const FOCUS_TIME = 5; 
+  const BREAK_TIME = 3; 
   
   const [seconds, setSeconds] = useState(FOCUS_TIME);
   const [isActive, setIsActive] = useState(false);
-  const [isBreak, setIsBreak] = useState(false); // 休憩モードかどうか
+  const [isBreak, setIsBreak] = useState(false);
+
+  // 現在のモードの合計時間を取得
+  const totalTime = isBreak ? BREAK_TIME : FOCUS_TIME;
+  // 進捗率を計算（0〜100%）
+  const progress = (seconds / totalTime) * 100;
 
   useEffect(() => {
     let interval = null;
@@ -17,16 +22,11 @@ function App() {
       }, 1000);
     } else if (seconds === 0) {
       setIsActive(false);
-      
       if (!isBreak) {
-        // 集中終了時
-        console.log("【集中完了】サーバー送信:", { type: "work", status: "done" });
         alert("集中終了！休憩しましょう。");
         setIsBreak(true);
         setSeconds(BREAK_TIME);
       } else {
-        // 休憩終了時
-        console.log("【休憩完了】サーバー送信:", { type: "break", status: "done" });
         alert("休憩終了！さあ、始めましょう。");
         setIsBreak(false);
         setSeconds(FOCUS_TIME);
@@ -35,12 +35,14 @@ function App() {
     return () => clearInterval(interval);
   }, [isActive, seconds, isBreak]);
 
-  // モードによってクラス名を使い分ける
   const themeClass = isBreak ? 'theme-break' : 'theme-focus';
 
   return (
     <div className={`container ${themeClass}`}>
-      <div className="timer-card">
+      {/* style={{ '--progress': `${progress}%` }} 
+         という部分で、CSSに現在の進捗率を渡しています
+      */}
+      <div className="timer-card" style={{ '--progress': `${progress}%` }}>
         <h1 className="status-label">
           {isBreak ? "☕️ RELAX" : "🎯 FOCUS"}
         </h1>
