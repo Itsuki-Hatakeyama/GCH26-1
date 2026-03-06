@@ -1,0 +1,102 @@
+/* 全体共通 */
+.container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background-color 0.5s ease; /* 色変化を滑らかに */
+}
+
+/* 集中モード：落ち着いた青 */
+.theme-focus {
+  background-color: #0f172a; /* 深い紺色 */
+  color: #f8fafc; /* 全体の文字をオフホワイトに */
+}
+
+.theme-focus .timer-card {
+  border-top: 6px solid #38bdf8; /* 鮮やかな水色のアクセント */
+  background: #1e293b;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* ★タイマーの数字：鮮やかな水色＋発光エフェクト */
+.theme-focus .timer-display {
+  color: #38bdf8; 
+  text-shadow: 0 0 15px rgba(56, 189, 248, 0.6), 
+               0 0 30px rgba(56, 189, 248, 0.2);
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.theme-focus .start { 
+  background-color: #0ea5e9; 
+  color: white; 
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+}
+
+.theme-focus .reset {
+  background-color: #334155;
+  color: #94a3b8;
+}
+.theme-focus .start { background-color: #0ea5e9; }
+
+/* 休憩モード：目に優しいセージグリーン */
+.theme-break {
+  /* 眩しさを抑えた、落ち着いた薄緑に変更 */
+  background-color: #dcfce7; 
+}
+
+.theme-break .timer-card {
+  border-top: 6px solid #22c55e; /* 少し濃いめの緑で引き締め */
+  background: #f0fdf4; /* カードの中身も少しだけトーンを落とす */
+  color: #166534;
+  box-shadow: 0 20px 40px rgba(22, 101, 52, 0.1);
+}
+
+.theme-break .timer-display { 
+  color: #15803d; 
+  /* 休憩中は発光させず、目に優しいマットな質感に */
+  text-shadow: none; 
+}
+
+.theme-break .start { 
+  background-color: #16a34a; 
+  color: white; 
+}
+
+.theme-break .reset { 
+  background-color: #bbf7d0; 
+  color: #166534; 
+}
+.theme-break .timer-display { color: #15803d; }
+.theme-break .start { background-color: #22c55e; color: white; }
+.theme-break .reset { background-color: #d1d5db; color: #374151; }
+
+/* カードと文字の基本スタイル */
+.timer-card {
+  padding: 4rem;
+  border-radius: 30px;
+  text-align: center;
+  min-width: 320px;
+}
+.status-label {
+  letter-spacing: 0.2em;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+.timer-display {
+  font-size: 7rem;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  margin-bottom: 2rem;
+}
+.btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.8; }
