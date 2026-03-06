@@ -1,43 +1,86 @@
-/* 既存の .timer-card を以下のように書き換えるか追記してください */
+/* 全体共通：画面中央に配置 */
+.container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transition: background-color 0.5s ease;
+}
+
+/* カードの基本設定 */
 .timer-card {
   padding: 4rem;
   border-radius: 30px;
   text-align: center;
   min-width: 320px;
   position: relative;
-  
-  /* ↓ 枠線のベースとなる背景。--progress変数を使って色を塗り分けています */
-  background: 
-    linear-gradient(#1e293b, #1e293b) padding-box, /* 内側の色（カードの色） */
-    conic-gradient(
-      var(--border-color) var(--progress), 
-      rgba(255, 255, 255, 0.1) 0
-    ) border-box; /* 外側の色（進捗バー） */
-  
-  border: 6px solid transparent; /* 透明なボーダーを作り、そこにグラデーションを表示 */
-  transition: background-color 0.5s ease;
+  border: 10px solid transparent; 
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  transition: all 0.5s ease;
 }
 
-/* 集中モードの色設定 */
+/* --- 集中モード（FOCUS）--- */
 .theme-focus {
-  background-color: #0f172a;
-  --border-color: #38bdf8; /* 水色のプログレスバー */
+  background-color: #020617; /* 真っ暗な紺 */
+  --card-bg: #1e293b;        /* カードは少し明るい紺 */
+  --border-color: #38bdf8;   /* 鮮やかな水色 */
+  --border-rest: #334155;    /* 削れた跡（暗いグレー） */
 }
 
-/* 休憩モードの色設定 */
+/* ★集中モードの conic-gradient */
+.theme-focus .timer-card {
+  background-image: 
+    linear-gradient(var(--card-bg), var(--card-bg)), 
+    conic-gradient(from 0deg, var(--border-color) var(--progress), var(--border-rest) 0deg);
+}
+
+.theme-focus .timer-display {
+  color: #38bdf8; 
+  text-shadow: 0 0 15px rgba(56, 189, 248, 0.7);
+}
+
+/* --- 休憩モード（RELAX）--- */
 .theme-break {
-  background-color: #dcfce7;
-  --border-color: #22c55e; /* 緑色のプログレスバー */
+  background-color: #dcfce7; /* 落ち着いた薄緑 */
+  --card-bg: #f0fdf4;        /* カード内側 */
+  --border-color: #22c55e;   /* 鮮やかな緑 */
+  --border-rest: #bbf7d0;    /* 削れた跡（薄い緑） */
 }
 
-/* 休憩モードのカード内側の色を調整 */
+/* ★修正ポイント：休憩モードにも 'from 0deg' を追加して位置を統一 */
 .theme-break .timer-card {
-  background: 
-    linear-gradient(#f0fdf4, #f0fdf4) padding-box,
-    conic-gradient(
-      var(--border-color) var(--progress), 
-      rgba(0, 0, 0, 0.05) 0
-    ) border-box;
+  background-image: 
+    linear-gradient(var(--card-bg), var(--card-bg)), 
+    conic-gradient(from 0deg, var(--border-color) var(--progress), var(--border-rest) 0deg);
 }
 
-/* ほか（ボタンなど）は以前のままでOK */
+.theme-break .timer-display {
+  color: #15803d;
+}
+
+/* ボタンなどの共通パーツ */
+.timer-display {
+  font-size: 7rem;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  margin: 1rem 0 2rem;
+}
+
+.btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  margin: 0 10px;
+  transition: transform 0.2s;
+}
+
+.btn:hover { transform: scale(1.05); }
+
+.theme-focus .start { background-color: #0ea5e9; color: white; }
+.theme-break .start { background-color: #16a34a; color: white; }
+.reset { background-color: #64748b; color: white; }

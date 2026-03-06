@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const FOCUS_TIME = 5; 
-  const BREAK_TIME = 3; 
+  const FOCUS_TIME = 15; 
+  const BREAK_TIME = 13; 
   
   const [seconds, setSeconds] = useState(FOCUS_TIME);
   const [isActive, setIsActive] = useState(false);
