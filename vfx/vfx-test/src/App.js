@@ -169,6 +169,58 @@ function App() {
     playComboSound(count); // フェーズ1の音を鳴らす
   };
 
+  // === 【フェーズ3：特殊ギミック・スキル系エフェクト（全21種）】 ===
+
+  // 3-1. ボム・爆発（5種）
+  const triggerBomb = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block bomb-${type}`;
+    if (type === 'mega') {
+      triggerShake('strong');
+      confetti({ particleCount: 200, spread: 360, startVelocity: 50, colors: ['#ff0000', '#ffa500', '#ffff00'] });
+    } else if (type === 'blackhole') {
+      // 0.5秒吸い込んでから爆発！
+      setTimeout(() => {
+        triggerShake('strong');
+        confetti({ particleCount: 150, spread: 360, startVelocity: 60, zIndex: 1000, colors: ['#8a2be2', '#000000', '#ffffff'] });
+      }, 500);
+    } else {
+      triggerShake('mild');
+      confetti({ particleCount: 80, spread: 180, colors: ['#ff4757', '#ffffff'] });
+    }
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 800);
+  };
+
+  // 3-2. ラインクリア（5種：レーザーやウェーブ）
+  const triggerLineClear = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block line-${type}`;
+    triggerShake('mild');
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 600);
+  };
+
+  // 3-3. シャッフル・盤面攪乱（3種）
+  const triggerShuffle = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block shuffle-${type}`;
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 1000);
+  };
+
+  // 3-4. ロック・お邪魔（4種：氷、石、鎖など）
+  const triggerLock = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block lock-${type}`;
+    // ロックは実験として2秒間維持する
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 2000);
+  };
+
+  // 3-5. ゲージ充填・チャージ（4種）
+  const triggerCharge = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block charge-${type}`;
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 1500);
+  };
+
   return (
     <div style={containerStyle}>
       <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
@@ -297,6 +349,50 @@ function App() {
           <button onClick={() => triggerComboNumber(2)} style={btnStyle}>2コンボ</button>
           <button onClick={() => triggerComboNumber(6)} style={{...btnStyle, background: '#ff7f50'}}>6コンボ</button>
           <button onClick={() => triggerComboNumber(12)} style={{...btnStyle, background: '#ff4757'}}>12コンボ</button>
+        </div>
+      </section>
+
+
+      {/* === フェーズ3：特殊ギミック・スキル系の実験 === */}
+      <section style={sectionStyle}>
+        <h3 style={{...labelStyle, color: '#e056fd'}}>フェーズ3：必殺技・特殊ギミック（スキル）</h3>
+        
+        {/* 実験用の的2（スキル用ターゲットブロック） */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '30px 0' }}>
+          <div id="target-block-skill" className="vfx-block target-block" style={{ width: '80px', height: '80px', fontSize: '14px', position: 'relative' }}>Skill</div>
+        </div>
+
+        <div style={{ textAlign: 'left', fontSize: '12px', color: '#ccc' }}>
+          <p>▼ 3-1. ボム・特殊爆発</p>
+          <button onClick={() => triggerBomb('cross')} style={btnStyle}>十字爆発</button>
+          <button onClick={() => triggerBomb('mega')} style={btnStyle}>メガボム</button>
+          <button onClick={() => triggerBomb('blackhole')} style={btnStyle}>ﾌﾞﾗｯｸﾎｰﾙ</button>
+          <button onClick={() => triggerBomb('firework')} style={btnStyle}>花火連発</button>
+          <button onClick={() => triggerBomb('x-burst')} style={btnStyle}>Xバースト</button>
+
+          <p>▼ 3-2. ラインクリア（一列消去）</p>
+          <button onClick={() => triggerLineClear('horiz')} style={btnStyle}>水平レーザー</button>
+          <button onClick={() => triggerLineClear('vert')} style={btnStyle}>垂直レーザー</button>
+          <button onClick={() => triggerLineClear('cross-laser')} style={btnStyle}>十字レーザー</button>
+          <button onClick={() => triggerLineClear('slash')} style={btnStyle}>斜め斬撃</button>
+          <button onClick={() => triggerLineClear('wave')} style={btnStyle}>水波(ウェーブ)</button>
+
+          <p>▼ 3-3. シャッフル（盤面攪乱）</p>
+          <button onClick={() => triggerShuffle('tornado')} style={btnStyle}>竜巻</button>
+          <button onClick={() => triggerShuffle('flip')} style={btnStyle}>フリップ</button>
+          <button onClick={() => triggerShuffle('bounce')} style={btnStyle}>大バウンス</button>
+
+          <p>▼ 3-4. ロック・お邪魔（状態異常）</p>
+          <button onClick={() => triggerLock('ice')} style={{...btnStyle, background: '#7efff5', color: '#000'}}>氷結(Ice)</button>
+          <button onClick={() => triggerLock('stone')} style={{...btnStyle, background: '#a4b0be', color: '#000'}}>石化(Stone)</button>
+          <button onClick={() => triggerLock('chain')} style={{...btnStyle, background: '#747d8c'}}>鎖(Chain)</button>
+          <button onClick={() => triggerLock('slime')} style={{...btnStyle, background: '#badc58', color: '#000'}}>粘液(Slime)</button>
+
+          <p>▼ 3-5. ゲージ充填（チャージ・準備）</p>
+          <button onClick={() => triggerCharge('aura')} style={{...btnStyle, background: '#feca57', color: '#000'}}>黄金オーラ</button>
+          <button onClick={() => triggerCharge('sparkle')} style={{...btnStyle, background: '#ffbe76', color: '#000'}}>星の集積</button>
+          <button onClick={() => triggerCharge('pulse')} style={{...btnStyle, background: '#ff7979'}}>脈動チャージ</button>
+          <button onClick={() => triggerCharge('overheat')} style={{...btnStyle, background: '#eb4d4b'}}>オーバーヒート</button>
         </div>
       </section>
 
@@ -469,6 +565,79 @@ function App() {
           0% { transform: translateY(-100px); opacity: 0; }
           100% { transform: translateY(0); opacity: 1; }
         }
+
+
+        
+        /* --- フェーズ3：特殊ギミック・スキル系CSS --- */
+        
+        /* 3-1. ボム・爆発 */
+        .bomb-cross { animation: bomb-cross 0.5s ease-out; box-shadow: 0 0 0 10px rgba(255,71,87,0.5); }
+        @keyframes bomb-cross { 0% { transform: scale(1); } 50% { transform: scale(1.5); box-shadow: 0 0 50px 20px rgba(255,71,87,1); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,71,87,0); } }
+        
+        .bomb-mega { animation: bomb-mega 0.8s ease-out; }
+        @keyframes bomb-mega { 0% { transform: scale(1); filter: brightness(1); } 30% { transform: scale(0.8); filter: brightness(2); } 50% { transform: scale(2.5); filter: brightness(3); opacity: 1; } 100% { transform: scale(1); filter: brightness(1); opacity: 1; } }
+
+        .bomb-blackhole { animation: bomb-bh 1s ease-in-out; }
+        @keyframes bomb-bh { 0% { transform: scale(1) rotate(0); border-radius: 12px; background-color: #3742fa; } 50% { transform: scale(0.1) rotate(720deg); border-radius: 50%; background-color: #000; box-shadow: 0 0 20px 10px rgba(138,43,226,0.8); } 100% { transform: scale(1) rotate(0); border-radius: 12px; background-color: #3742fa; } }
+
+        .bomb-firework { animation: bomb-fw 0.6s ease-out infinite; }
+        @keyframes bomb-fw { 0% { transform: translateY(0) scale(1); } 50% { transform: translateY(-20px) scale(1.2); filter: hue-rotate(90deg); } 100% { transform: translateY(0) scale(1); } }
+
+        .bomb-x-burst { animation: bomb-x 0.5s ease-out; }
+        @keyframes bomb-x { 0% { transform: scale(1) rotate(45deg); } 50% { transform: scale(1.5) rotate(45deg); filter: contrast(2); } 100% { transform: scale(1) rotate(45deg); } }
+
+        /* 3-2. ラインクリア（疑似要素でレーザーを描画） */
+        .line-horiz::after { content: ''; position: absolute; top: 50%; left: -200%; width: 500%; height: 10px; background: #fff; box-shadow: 0 0 15px 5px #ff9ff3; transform: translateY(-50%); animation: laser-h 0.4s ease-out forwards; z-index: 10; }
+        @keyframes laser-h { 0% { transform: translateY(-50%) scaleY(0); opacity: 1; } 50% { transform: translateY(-50%) scaleY(2); opacity: 1; } 100% { transform: translateY(-50%) scaleY(0); opacity: 0; } }
+
+        .line-vert::after { content: ''; position: absolute; left: 50%; top: -200%; height: 500%; width: 10px; background: #fff; box-shadow: 0 0 15px 5px #00d2d3; transform: translateX(-50%); animation: laser-v 0.4s ease-out forwards; z-index: 10; }
+        @keyframes laser-v { 0% { transform: translateX(-50%) scaleX(0); opacity: 1; } 50% { transform: translateX(-50%) scaleX(2); opacity: 1; } 100% { transform: translateX(-50%) scaleX(0); opacity: 0; } }
+
+        .line-cross-laser::before { content: ''; position: absolute; top: 50%; left: -200%; width: 500%; height: 8px; background: #feca57; transform: translateY(-50%); animation: laser-h 0.5s ease-out forwards; z-index: 10; }
+        .line-cross-laser::after { content: ''; position: absolute; left: 50%; top: -200%; height: 500%; width: 8px; background: #feca57; transform: translateX(-50%); animation: laser-v 0.5s ease-out forwards; z-index: 10; }
+
+        .line-slash::after { content: ''; position: absolute; top: 50%; left: -100%; width: 300%; height: 5px; background: #fff; box-shadow: 0 0 10px #ff6b6b; transform: translateY(-50%) rotate(45deg); animation: slash 0.3s ease-in forwards; z-index: 10; }
+        @keyframes slash { 0% { opacity: 0; width: 0; left: 50%; } 50% { opacity: 1; width: 300%; left: -100%; } 100% { opacity: 0; } }
+
+        .line-wave { animation: wave-anim 0.5s linear; }
+        @keyframes wave-anim { 0% { transform: translateX(0) scaleY(1); } 25% { transform: translateX(-15px) scaleY(1.3); background-color: #48dbfb; } 75% { transform: translateX(15px) scaleY(0.7); background-color: #0abde3; } 100% { transform: translateX(0) scaleY(1); } }
+
+        /* 3-3. シャッフル */
+        .shuffle-tornado { animation: tornado 0.8s ease-in-out forwards; }
+        @keyframes tornado { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(1080deg) scale(0.5); opacity: 0.5; } 100% { transform: rotate(2160deg) scale(1); opacity: 1; } }
+
+        .shuffle-flip { animation: flip 0.6s ease-in-out forwards; }
+        @keyframes flip { 0% { transform: perspective(400px) rotateY(0); } 50% { transform: perspective(400px) rotateY(180deg) scale(1.2); } 100% { transform: perspective(400px) rotateY(360deg); } }
+
+        .shuffle-bounce { animation: shuffle-bounce 0.8s ease-in-out forwards; }
+        @keyframes shuffle-bounce { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-40px) translateX(-20px); } 50% { transform: translateY(0) translateX(20px); } 75% { transform: translateY(-20px) translateX(0); } }
+
+        /* 3-4. ロック・お邪魔（疑似要素で上書き） */
+        .lock-ice::after { content: ''; position: absolute; inset: -5px; background: rgba(200, 247, 255, 0.6); border: 3px solid #00d2d3; border-radius: 4px; box-shadow: inset 0 0 10px #fff; pointer-events: none; animation: freeze 2s forwards; }
+        @keyframes freeze { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+
+        .lock-stone { animation: stone 2s forwards; }
+        @keyframes stone { 0% { filter: grayscale(0); } 10% { filter: grayscale(1) sepia(0.2); background-color: #7f8fa6; } 90% { filter: grayscale(1) sepia(0.2); background-color: #7f8fa6; } 100% { filter: grayscale(0); } }
+
+        .lock-chain::before { content: '🔗'; position: absolute; font-size: 40px; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 5; animation: chain 2s forwards; }
+        @keyframes chain { 0% { opacity: 0; transform: translate(-50%, -50%) scale(2); } 10% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 90% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); } }
+
+        .lock-slime::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 100%; background: linear-gradient(transparent, rgba(172, 216, 100, 0.8)); border-radius: 12px; animation: slime-drip 2s forwards; }
+        @keyframes slime-drip { 0% { height: 0%; opacity: 0; } 10% { height: 100%; opacity: 1; } 90% { height: 100%; opacity: 1; } 100% { height: 0%; opacity: 0; } }
+
+        /* 3-5. ゲージ充填・オーラ */
+        .charge-aura { animation: aura 1.5s ease-in-out; box-shadow: 0 0 20px 10px #feca57; }
+        @keyframes aura { 0%, 100% { box-shadow: 0 0 10px 5px #feca57; } 50% { box-shadow: 0 0 40px 20px #ff9f43; background-color: #feca57; } }
+
+        .charge-sparkle::after { content: '✨'; position: absolute; top: -10px; right: -10px; font-size: 24px; animation: sparkle 1.5s infinite; }
+        .charge-sparkle::before { content: '✨'; position: absolute; bottom: -10px; left: -10px; font-size: 20px; animation: sparkle 1.5s infinite alternate-reverse; }
+        @keyframes sparkle { 0% { opacity: 0; transform: scale(0.5) rotate(0); } 50% { opacity: 1; transform: scale(1.5) rotate(180deg); } 100% { opacity: 0; transform: scale(0.5) rotate(360deg); } }
+
+        .charge-pulse { animation: charge-pulse 1.5s ease-in-out; }
+        @keyframes charge-pulse { 0%, 100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.5); box-shadow: 0 0 15px #ff5252; } }
+
+        .charge-overheat { animation: overheat 1.5s forwards; }
+        @keyframes overheat { 0% { background-color: #3742fa; } 30% { background-color: #ff5252; box-shadow: 0 0 10px #ff5252; } 70% { background-color: #ff3838; box-shadow: 0 0 30px #ff3838; transform: translate(2px, -2px); } 100% { background-color: #3742fa; } }
       `}</style>
     </div>
   );
