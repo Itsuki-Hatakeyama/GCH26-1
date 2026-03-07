@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
+  // 画面遷移用の状態（'home' または 'timer'）
+  const [view, setView] = useState('home');
+
+  // --- タイマーのロジック（そのまま） ---
   const FOCUS_TIME = 15; 
   const BREAK_TIME = 13; 
   
@@ -9,9 +13,7 @@ function App() {
   const [isActive, setIsActive] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
 
-  // 現在のモードの合計時間を取得
   const totalTime = isBreak ? BREAK_TIME : FOCUS_TIME;
-  // 進捗率を計算（0〜100%）
   const progress = (seconds / totalTime) * 100;
 
   useEffect(() => {
@@ -35,13 +37,39 @@ function App() {
     return () => clearInterval(interval);
   }, [isActive, seconds, isBreak]);
 
+  // --- 画面の出し分け ---
+
+  // ① ホーム画面
+  if (view === 'home') {
+    return (
+      <div className="container theme-home">
+        <div className="home-content">
+          <h1 className="app-title">PUZZLE & DRYOKU's</h1>
+          <p className="app-subtitle">集中してランクを上げよう</p>
+          <div className="menu-group">
+            <button className="btn-main" onClick={() => setView('timer')}>
+              START MISSION
+            </button>
+            <button className="btn-sub">RANKING</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ② タイマー画面
   const themeClass = isBreak ? 'theme-break' : 'theme-focus';
 
   return (
     <div className={`container ${themeClass}`}>
-      {/* style={{ '--progress': `${progress}%` }} 
-         という部分で、CSSに現在の進捗率を渡しています
-      */}
+      {/* 左上にホームへ戻るボタンを追加 */}
+      <button className="btn-back" onClick={() => {
+        setView('home');
+        setIsActive(false); // ホームに戻る時はタイマーを一時停止
+      }}>
+        ← HOME
+      </button>
+
       <div className="timer-card" style={{ '--progress': `${progress}%` }}>
         <h1 className="status-label">
           {isBreak ? "☕️ RELAX" : "🎯 FOCUS"}

@@ -1,3 +1,7 @@
+/* ==========================================
+   タイマー画面（完成版）
+   ========================================== */
+
 /* 全体共通：画面中央に配置 */
 .container {
   height: 100vh;
@@ -6,6 +10,7 @@
   align-items: center;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   transition: background-color 0.5s ease;
+  position: relative; /* 戻るボタンの配置用 */
 }
 
 /* カードの基本設定 */
@@ -24,13 +29,12 @@
 
 /* --- 集中モード（FOCUS）--- */
 .theme-focus {
-  background-color: #020617; /* 真っ暗な紺 */
-  --card-bg: #1e293b;        /* カードは少し明るい紺 */
-  --border-color: #38bdf8;   /* 鮮やかな水色 */
-  --border-rest: #334155;    /* 削れた跡（暗いグレー） */
+  background-color: #020617; 
+  --card-bg: #1e293b;        
+  --border-color: #38bdf8;   
+  --border-rest: #334155;    
 }
 
-/* ★集中モードの conic-gradient */
 .theme-focus .timer-card {
   background-image: 
     linear-gradient(var(--card-bg), var(--card-bg)), 
@@ -44,13 +48,12 @@
 
 /* --- 休憩モード（RELAX）--- */
 .theme-break {
-  background-color: #dcfce7; /* 落ち着いた薄緑 */
-  --card-bg: #f0fdf4;        /* カード内側 */
-  --border-color: #22c55e;   /* 鮮やかな緑 */
-  --border-rest: #bbf7d0;    /* 削れた跡（薄い緑） */
+  background-color: #dcfce7; 
+  --card-bg: #f0fdf4;        
+  --border-color: #22c55e;   
+  --border-rest: #bbf7d0;    
 }
 
-/* ★修正ポイント：休憩モードにも 'from 0deg' を追加して位置を統一 */
 .theme-break .timer-card {
   background-image: 
     linear-gradient(var(--card-bg), var(--card-bg)), 
@@ -84,3 +87,108 @@
 .theme-focus .start { background-color: #0ea5e9; color: white; }
 .theme-break .start { background-color: #16a34a; color: white; }
 .reset { background-color: #64748b; color: white; }
+
+
+/* ==========================================
+   ホーム画面（新規追加分）
+   ========================================== */
+
+/* ホーム画面の背景 */
+.theme-home {
+  background-color: #020617; /* 集中モードと同じ深い紺色 */
+  background-image: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+  color: white;
+}
+
+/* ホームの中身を画面中央で縦並びにする */
+.home-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* タイトルロゴ */
+.app-title {
+  font-size: 6rem; /* 画面全体を使うのでドカンと大きく */
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  color: #38bdf8;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.5), 0 0 40px rgba(56, 189, 248, 0.2);
+  margin-bottom: 0.5rem;
+  font-family: 'Courier New', monospace;
+}
+
+.app-subtitle {
+  color: #94a3b8;
+  font-size: 1.5rem;
+  margin-bottom: 5rem;
+  letter-spacing: 0.2em;
+}
+
+/* メニューボタンのグループ */
+.menu-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 400px; /* PC向けに少し幅広に */
+}
+
+/* メインボタン（START MISSION） */
+.btn-main {
+  padding: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+  transition: all 0.3s ease;
+  letter-spacing: 0.1em;
+}
+
+.btn-main:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(37, 99, 235, 0.6);
+}
+
+/* サブボタン（RANKING） */
+.btn-sub {
+  background: transparent;
+  color: #94a3b8;
+  border: 2px solid #334155;
+  padding: 1.2rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.1em;
+}
+
+.btn-sub:hover {
+  background-color: #1e293b;
+  color: white;
+}
+
+/* タイマー画面に戻るための小さなボタン（左上） */
+.btn-back {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  background: transparent;
+  color: #64748b;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.btn-back:hover {
+  color: #f8fafc;
+}
