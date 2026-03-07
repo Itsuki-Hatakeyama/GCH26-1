@@ -5,16 +5,47 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
 
-  const handleSubmit = (e) => {
+  // APIのベースURL（Flaskのデフォルト）
+  const API_BASE = "http://127.0.0.1:5000";
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (userId.trim() !== '' && password.trim() !== '') {
-      onLogin(userId);
-    } else {
-      alert('IDとパスワードを入力してください！');
+    
+    // 入力チェック
+    if (!userId.trim() || !password.trim()) {
+      alert('ユーザーIDとパスワードを入力してください！');
+      return;
+    }
+
+    // 叩くエンドポイントを切り替え
+    const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, password: password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 成功！
+        alert(data.message);
+        // ログインモードだった、あるいは登録に成功した場合は、そのままログイン状態にする
+        // （※登録成功後に自動ログインさせるか、ログイン画面に戻すかは設計次第ですが、
+        // ユーザー体験のためにここではログイン成功として扱います）
+        onLogin(userId);
+      } else {
+        // 失敗（ID重複やパスワード間違いなど）
+        alert(`エラー: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('通信エラー:', error);
+      alert('サーバーとの通信に失敗しました。app.pyが起動しているか確認してください。');
     }
   };
 
-  // 指定のアクセントカラー：空色（#38bdf8）
   const accentColor = '#38bdf8';
 
   return (
@@ -27,9 +58,8 @@ export default function Login({ onLogin }) {
       padding: '20px',
       textAlign: 'center'
     }}>
-      {/* --- タイトル部分 --- */}
       <h1 className="app-title">
-        PUZZLE<br />&<br />DRYOKU's
+        DRYOKU<br />& PUZZLE
       </h1>
       
       <p style={{ 
@@ -42,14 +72,13 @@ export default function Login({ onLogin }) {
         {isLoginMode ? '>> ログイン' : '>> 新規登録'}
       </p>
 
-      {/* --- 入力カード部分 --- */}
       <div style={{
         width: '100%',
         maxWidth: '450px',
-        backgroundColor: 'rgba(30, 41, 59, 0.4)', // 指定の背景色を少し透過
+        backgroundColor: 'rgba(30, 41, 59, 0.4)',
         backdropFilter: 'blur(8px)',
         padding: '50px 40px',
-        borderRadius: '4px', // あえて角を丸めすぎず、メカニカルな印象に
+        borderRadius: '4px',
         border: `1px solid ${accentColor}44`,
         boxShadow: `0 20px 50px rgba(0, 0, 0, 0.5)`,
       }}>
@@ -126,12 +155,11 @@ export default function Login({ onLogin }) {
         </div>
       </div>
 
-      {/* スタイル調整 */}
       <style>{`
         .login-input {
           width: 100%;
           padding: 15px;
-          border-radius: 0px; /* 直線的なデザイン */
+          border-radius: 0px;
           border: 1px solid rgba(56, 189, 248, 0.2);
           background-color: rgba(15, 23, 42, 0.8);
           color: white;
