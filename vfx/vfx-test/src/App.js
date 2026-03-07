@@ -102,6 +102,45 @@ function App() {
       <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
 
       <div id="vfx-screen-overlay" style={overlayStyle}></div>
+
+
+    {/* === フェーズ1：操作・入力系の実験 === */}
+      <section style={sectionStyle}>
+        <h3 style={{...labelStyle, color: '#ff7f50'}}>フェーズ1：操作の手触り（Juice）</h3>
+        
+        {/* 1. タップ波紋と音 */}
+        <div style={{ position: 'relative', overflow: 'hidden', padding: '20px', border: '1px dashed #747d8c', marginBottom: '10px' }} onClick={(e) => { triggerRipple(e); playTapSound(); }}>
+          ここをクリックして波紋と音をテスト
+          {ripples.map((r) => (
+             <div key={r.id} style={{
+               position: 'absolute', left: r.x, top: r.y,
+               transform: 'translate(-50%, -50%)',
+               width: '20px', height: '20px', backgroundColor: 'rgba(255, 255, 255, 0.7)',
+               borderRadius: '50%', pointerEvents: 'none',
+               animation: 'ripple-effect 0.6s ease-out forwards'
+             }} />
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '15px' }}>
+          {/* 2. ホールド・選択（浮き上がりと発光） */}
+          <div className="vfx-block hover-glow">掴む<br/>(Hover)</div>
+          
+          {/* 3. キャンセル戻り（拒絶のぷるん） */}
+          <div className="vfx-block error-wobble" onClick={(e) => {
+            e.target.classList.remove('active');
+            void e.target.offsetWidth; // アニメーションのリセット
+            e.target.classList.add('active');
+          }}>拒絶<br/>(Click)</div>
+
+          {/* 4. 着地の潰れ（スクワッシュ＆ストレッチ） */}
+          <div className="vfx-block squash-stretch" onClick={(e) => {
+            e.target.classList.remove('active');
+            void e.target.offsetWidth;
+            e.target.classList.add('active');
+          }}>着地<br/>(Click)</div>
+        </div>
+      </section>
       
       {/* --- セクション 1: 画面の揺れ --- */}
       <section style={sectionStyle}>
