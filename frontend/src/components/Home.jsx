@@ -5,7 +5,7 @@ export default function Home({ onNavigate }) {
   return (
     <div className="container theme-home">
       <div className="home-content">
-        <h1 className="app-title">PUZZLE & DRYOKU's</h1>
+        <h1 className="app-title">PUZZLE&DRYOKU's</h1>
         <p className="app-subtitle">集中してランクを上げよう</p>
         <div className="menu-group">
           <button className="btn-main" onClick={() => onNavigate('timer')}>
