@@ -810,9 +810,10 @@ const sectionStyle = { border: '1px solid #57606f', borderRadius: '10px', paddin
 const labelStyle = { color: '#ced6e0', fontSize: '14px' };
 const btnStyle = { margin: '5px', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer', border: 'none', fontWeight: 'bold' };
 const popupStyle = { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', color: '#7bed9f', fontSize: '2rem', fontWeight: 'bold', pointerEvents: 'none' };
-const overlayStyle = {
-  position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-  backgroundColor: 'rgba(255, 0, 0, 0.3)', display: 'none', pointerEvents: 'none', zIndex: 999
-};
 
+
+
+const bgLayerStyle = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 0, transition: 'all 0.5s' };
+const vignetteStyle = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 1500, transition: 'all 0.3s' };
+const sysTextStyle = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' };
 export default App;
