@@ -2,107 +2,150 @@ import React, { useState } from 'react';
 
 export default function Login({ onLogin }) {
   const [userId, setUserId] = useState('');
-  
-  // ★追加：今が「ログイン画面」か「新規登録画面」かを切り替えるスイッチ
+  const [password, setPassword] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    if (userId.trim() !== '') {
-      
-      // ---------------------------------------------------------
-      // 💡 後でバックエンド（API）と繋ぐ時はここに処理を書きます！
-      // ---------------------------------------------------------
-      if (isLoginMode) {
-        // 【ログインの処理】
-        // 例: データベースを見て、この userId が存在するかチェックする
-        console.log('ログイン実行:', userId);
-      } else {
-        // 【新規登録の処理】
-        // 例: データベースの users テーブルに新しい userId を登録する
-        // （study_minutes: 0, bomb_count: 0 で初期データを作る）
-        console.log('新規登録実行:', userId);
-      }
-      
-      // ※今はUI（見た目）を作っている段階なので、
-      // どちらのモードでもApp.jsにIDを渡して先に進めちゃいます！
+    if (userId.trim() !== '' && password.trim() !== '') {
       onLogin(userId);
-
     } else {
-      alert('ユーザーIDを入力してください！');
+      alert('IDとパスワードを入力してください！');
     }
   };
 
-return (
-    <div className="container theme-home" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {/* このコンテナの maxWidth: '400px' の中でテキストが折り返されています */}
-      <div className="home-content" style={{ width: '100%', maxWidth: '400px', backgroundColor: 'rgba(0,0,0,0.5)', padding: '40px', borderRadius: '20px' }}>
-        
-        <h1 className="app-title" style={{ fontSize: '28px', marginBottom: '10px' }}>PUZZLE & DRYOKU's</h1>
-        
-        {/* ★ここを修正！ whiteSpace: 'nowrap' を追加します */}
-        <p className="app-subtitle" style={{ marginBottom: '30px', whiteSpace: 'nowrap' }}>
-          {isLoginMode ? 'ログインして努力を記録しよう' : '新しくアカウントを作成しよう'}
-        </p>
+  // 指定のアクセントカラー：空色（#38bdf8）
+  const accentColor = '#38bdf8';
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <div>
-            {/* モードによってラベルが変わる */}
-            <label style={{ display: 'block', color: '#c4b5fd', marginBottom: '5px', textAlign: 'left', fontSize: '14px' }}>
-              {isLoginMode ? 'ユーザーID' : '希望するユーザーID'}
+  return (
+    <div className="container theme-home" style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      padding: '20px',
+      textAlign: 'center'
+    }}>
+      {/* --- タイトル部分 --- */}
+      <h1 className="app-title">
+        PUZZLE<br />&<br />DRYOKU's
+      </h1>
+      
+      <p style={{ 
+        color: accentColor, 
+        marginBottom: '40px', 
+        fontSize: '18px',
+        letterSpacing: '0.3em',
+        fontWeight: 'bold'
+      }}>
+        {isLoginMode ? '>> ログイン' : '>> 新規登録'}
+      </p>
+
+      {/* --- 入力カード部分 --- */}
+      <div style={{
+        width: '100%',
+        maxWidth: '450px',
+        backgroundColor: 'rgba(30, 41, 59, 0.4)', // 指定の背景色を少し透過
+        backdropFilter: 'blur(8px)',
+        padding: '50px 40px',
+        borderRadius: '4px', // あえて角を丸めすぎず、メカニカルな印象に
+        border: `1px solid ${accentColor}44`,
+        boxShadow: `0 20px 50px rgba(0, 0, 0, 0.5)`,
+      }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ color: accentColor, fontSize: '14px', fontFamily: 'monospace', marginBottom: '8px', display: 'block' }}>
+              _USER_ID:
             </label>
             <input 
               type="text" 
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
-              placeholder="例: user_123"
-              style={{
-                width: '100%',
-                padding: '12px',
-                borderRadius: '8px',
-                border: '2px solid #8b5cf6',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                color: 'white',
-                fontSize: '16px',
-                outline: 'none',
-                boxSizing: 'border-box'
-              }}
+              placeholder="ENTER ID"
+              className="login-input"
             />
           </div>
 
-          {/* モードによってボタンの色と文字が変わる！ */}
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ color: accentColor, fontSize: '14px', fontFamily: 'monospace', marginBottom: '8px', display: 'block' }}>
+              _PASSWORD:
+            </label>
+            <input 
+              type="password" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="********"
+              className="login-input"
+            />
+          </div>
+
           <button 
             type="submit" 
-            className="btn-main" 
-            style={{ 
-              marginTop: '15px', 
-              width: '100%', 
-              backgroundColor: isLoginMode ? '#8b5cf6' : '#2ed573' // 登録時は緑色に！
+            style={{
+              marginTop: '20px',
+              padding: '18px',
+              backgroundColor: 'transparent',
+              color: accentColor,
+              border: `2px solid ${accentColor}`,
+              fontSize: '20px',
+              fontWeight: '900',
+              cursor: 'pointer',
+              letterSpacing: '0.2em',
+              transition: 'all 0.3s',
+              fontFamily: 'monospace'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.backgroundColor = accentColor;
+              e.target.style.color = '#020617';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+              e.target.style.color = accentColor;
             }}
           >
-            {isLoginMode ? 'LOGIN' : 'SIGN UP'}
+            {isLoginMode ? '[ LOGIN ]' : '[ SIGN UP ]'}
           </button>
         </form>
 
-        {/* ★追加：ログインと新規登録を切り替えるボタン */}
-        <div style={{ marginTop: '25px', textAlign: 'center' }}>
+        <div style={{ marginTop: '30px' }}>
           <button 
             onClick={() => setIsLoginMode(!isLoginMode)}
             style={{
               background: 'none',
               border: 'none',
-              color: '#c4b5fd',
+              color: 'rgba(255, 255, 255, 0.5)',
               textDecoration: 'underline',
               cursor: 'pointer',
-              fontSize: '14px'
+              fontSize: '14px',
+              fontFamily: 'monospace'
             }}
           >
-            {isLoginMode ? '初めての方はこちら（新規登録）' : 'すでにアカウントをお持ちの方（ログイン）'}
+            {isLoginMode ? "// 新規アカウント作成" : "// 既存アカウントでログイン"}
           </button>
         </div>
-        
       </div>
+
+      {/* スタイル調整 */}
+      <style>{`
+        .login-input {
+          width: 100%;
+          padding: 15px;
+          border-radius: 0px; /* 直線的なデザイン */
+          border: 1px solid rgba(56, 189, 248, 0.2);
+          background-color: rgba(15, 23, 42, 0.8);
+          color: white;
+          font-size: 18px;
+          font-family: 'Courier New', monospace;
+          outline: none;
+          box-sizing: border-box;
+          transition: all 0.3s;
+        }
+        .login-input:focus {
+          border-color: ${accentColor};
+          box-shadow: 0 0 10px ${accentColor}44;
+        }
+      `}</style>
     </div>
   );
 }

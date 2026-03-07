@@ -44,19 +44,19 @@ function App() {
     );
   }
 
-  // ② タイマー画面（後で currentUser.id を使ってボムを増やすAPIを叩けます）
+  // ② タイマー画面（currentUserを渡す！）
   if (view === 'timer') {
-    return <Timer onBack={() => setView('home')} />;
+    return <Timer onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ③ ランキング画面
+  // ③ ランキング画面（念のため渡しておく）
   if (view === 'ranking') {
-    return <Ranking onBack={() => setView('home')} />;
+    return <Ranking onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ④ ゲーム画面（後で currentUser.id を使ってボムの所持数を取得したり、スコアを保存したりします）
+  // ④ ゲーム画面（currentUserを渡す！）
   if (view === 'game') {
-    return <PuzzleBoard onBack={() => setView('home')} />;
+    return <PuzzleBoard onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
   return null;
