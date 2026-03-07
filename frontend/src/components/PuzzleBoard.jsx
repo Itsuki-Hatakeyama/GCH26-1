@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // 新妻さんが作った最強のロジックをインポート！
+// ※画像0の構成から、パスは正しいはずです。
 import {
   createBoard,
   removeBlocks,
@@ -16,7 +17,8 @@ export default function PuzzleBoard({ onBack }) {
   const [board, setBoard] = useState([]);
   const [score, setScore] = useState(0);
   
-  const [bombCount, setBombCount] = useState(3); // TODO: 本番はポモドーロから受け取る
+  // ボムの所持数（本番はApp.jsから受け取るのが理想）
+  const [bombCount, setBombCount] = useState(3); 
   const [isBombMode, setIsBombMode] = useState(false);
 
   // ⏱ 2分間(120秒)のスコアアタック用タイマー
@@ -111,80 +113,36 @@ export default function PuzzleBoard({ onBack }) {
   if (board.length === 0) return null;
 
   return (
-    <div style={{ textAlign: 'center', fontFamily: 'sans-serif', color: 'white', position: 'relative', minHeight: '100vh', paddingTop: '20px' }}>
+    // 🌟 全体をダーク背景に
+    <div className="puzzle-screen" style={styles.screenContainer}>
       
-      {/* 🌟 左上のホームボタン（onClickをonBackに変更！） */}
-      <button 
+      {/* 🌟 左上のホームボタン（タイマー画面の「← HOME」を踏襲） */}
+      <div 
         onClick={onBack} 
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          padding: '10px 15px',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          backgroundColor: '#dfe4ea',
-          color: '#2f3542',
-          border: 'none',
-          borderRadius: '8px',
-          cursor: 'pointer',
-          boxShadow: '0 4px 0px rgba(0,0,0,0.1)',
-          transition: 'transform 0.1s'
-        }}
-        onMouseDown={(e) => e.currentTarget.style.transform = 'translateY(4px)'}
-        onMouseUp={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+        style={styles.backButton}
       >
-        ⬅️ ホーム
-      </button>
+        ← HOME
+      </div>
 
       {/* 👑 ヘッダー（スコア・タイマー・アイテム表示エリア） */}
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center', gap: '40px', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '32px', margin: 0, textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
+      <div style={styles.header}>
+        {/* 🌟 タイマー: 巨大なネオンブルーグローテキスト */}
+        <div style={styles.timerDisplay}>
           ⏱ {formatTime(timeLeft)}
-        </h2>
-        <h2 style={{ fontSize: '36px', margin: 0, textShadow: '2px 2px 0px rgba(0,0,0,0.2)' }}>
-          SCORE: {score}
-        </h2>
+        </div>
+        
+        {/* スコア・ボム: ネオンブルーグローテキスト */}
+        <div style={styles.infoDisplay}>
+          <div style={styles.scoreText}>SCORE: {score}</div>
+          <div style={styles.bombText}>💣: {bombCount}</div>
+        </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        {/* ボム発動ボタン */}
-        <button 
-          onClick={() => {
-            if (bombCount > 0 && !isGameOver) setIsBombMode(!isBombMode);
-          }}
-          disabled={isGameOver || bombCount <= 0}
-          style={{
-            padding: '12px 24px',
-            fontSize: '18px',
-            fontWeight: 'bold',
-            backgroundColor: isBombMode ? '#ff4757' : (bombCount > 0 && !isGameOver ? '#ffa502' : '#747d8c'),
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            cursor: bombCount > 0 && !isGameOver ? 'pointer' : 'not-allowed',
-            boxShadow: '0 4px 0px rgba(0,0,0,0.2)',
-            transform: isBombMode ? 'scale(0.95)' : 'scale(1)',
-            transition: 'all 0.1s'
-          }}
-        >
-          {isBombMode ? '💣 どこに落とす？ (タップでキャンセル)' : `💣 ボムを使う (残り: ${bombCount}個)`}
-        </button>
-      </div>
-      
       {/* 🧩 8x8のグリッド（盤面）エリア */}
+      {/* 🌟 盤面全体: ネオンブルーのアウトラインとグローを持つ角丸パネル */}
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${COLS}, 50px)`,
-        gap: '6px',
-        justifyContent: 'center',
-        margin: '0 auto',
-        padding: '15px',
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        borderRadius: '16px',
-        width: 'fit-content',
-        opacity: isGameOver ? 0.5 : 1 // ゲームオーバー時は盤面を暗くする
+        ...styles.boardPanel,
+        opacity: isGameOver ? 0.3 : 1 // ゲームオーバー時は盤面を暗くする
       }}>
         {board.map((row, y) => 
           row.map((value, x) => (
@@ -192,43 +150,150 @@ export default function PuzzleBoard({ onBack }) {
               key={`${y}-${x}`}
               onClick={() => handleBlockClick(x, y)}
               style={{
-                width: '50px',
-                height: '50px',
+                ...styles.block,
                 backgroundColor: getBlockColor(value),
-                borderRadius: '10px',
                 cursor: value === 0 || isGameOver ? 'default' : (isBombMode ? 'crosshair' : 'pointer'),
                 boxShadow: value !== 0 ? 'inset 0 -5px 0 rgba(0,0,0,0.15)' : 'none',
-                transition: 'all 0.1s ease-in-out',
-                transform: isBombMode && value !== 0 && !isGameOver ? 'scale(0.9)' : 'scale(1)',
-                border: isBombMode && value !== 0 && !isGameOver ? '2px solid #ff4757' : 'none'
+                // ボムモード中は赤い枠線をつける演出
+                border: isBombMode && value !== 0 && !isGameOver ? '3px solid #ff4757' : 'none'
               }}
             />
           ))
         )}
       </div>
 
+      <div style={styles.bombBtnContainer}>
+        {/* 🌟 ボム発動ボタン: ホーム画面の「START MISSION」のようなネオンブルーグラデーション */}
+        <button 
+          onClick={() => {
+            if (bombCount > 0 && !isGameOver) setIsBombMode(!isBombMode);
+          }}
+          disabled={isGameOver || bombCount <= 0}
+          style={{
+            ...styles.bombBtn,
+            background: isBombMode ? 'linear-gradient(45deg, #ff4757, #ff6b81)' : 'linear-gradient(45deg, #1e90ff, #70a1ff)',
+            boxShadow: isBombMode ? styles.bombBtnShadowRed : (bombCount > 0 && !isGameOver ? styles.bombBtnShadowBlue : 'none'),
+            opacity: bombCount > 0 && !isGameOver ? 1 : 0.5,
+            cursor: bombCount > 0 && !isGameOver ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {isBombMode ? '💣 落とす場所をタップ！' : `💣 ボムを使う`}
+        </button>
+      </div>
+      
       {/* 🏁 ゲームオーバー時のオーバーレイ表示 */}
       {isGameOver && (
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          backgroundColor: 'rgba(255, 255, 255, 0.95)', color: '#2f3542',
-          padding: '40px', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', zIndex: 10
-        }}>
-          <h1 style={{ fontSize: '48px', margin: '0 0 10px 0', color: '#ff4757' }}>TIME UP!</h1>
-          <h2 style={{ fontSize: '32px', margin: '0 0 20px 0' }}>Score: {score}</h2>
-          <button 
-            onClick={onBack} // 🌟 ここも onBack に変更！
-            style={{
-              padding: '12px 24px', fontSize: '18px', fontWeight: 'bold', backgroundColor: '#1e90ff',
-              color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer',
-              boxShadow: '0 4px 0px rgba(0,0,0,0.2)'
-            }}
-          >
-            ホームへ戻る
-          </button>
+        <div style={styles.gameOverOverlay}>
+          <div style={styles.gameOverPanel}>
+            {/* 🌟 TIME UP: 赤いネオンテキスト */}
+            <h1 style={styles.timeUpText}>TIME UP!</h1>
+            <h2 style={styles.finalScoreText}>Score: {score}</h2>
+            <button 
+              onClick={onBack} 
+              style={styles.goHomeBtn}
+            >
+              ホームへ戻る
+            </button>
+          </div>
         </div>
       )}
       
     </div>
   );
 }
+
+// --- インラインスタイル定義 (ネオン・ダークテーマ) ---
+const styles = {
+  screenContainer: {
+    backgroundColor: '#0a0e17', // 超深い紺色（App.cssの背景と合わせる）
+    color: '#f1f2f6',
+    fontFamily: 'sans-serif',
+    position: 'relative',
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingTop: '60px',
+  },
+  backButton: {
+    position: 'absolute', top: '20px', left: '20px',
+    fontSize: '18px', fontWeight: 'bold', color: '#f1f2f6', cursor: 'pointer',
+    opacity: 0.8, transition: 'opacity 0.2s',
+  },
+  header: {
+    display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px',
+    marginBottom: '20px', width: '90%', maxWidth: '600px',
+  },
+  timerDisplay: {
+    fontSize: '64px', fontWeight: 'bold',
+    color: '#1e90ff', // ネオンブルー
+    textShadow: '0 0 10px rgba(30, 144, 255, 0.7), 0 0 20px rgba(30, 144, 255, 0.5)',
+  },
+  infoDisplay: {
+    display: 'flex', flexDirection: 'column', gap: '5px',
+  },
+  scoreText: {
+    fontSize: '28px', fontWeight: 'bold',
+    color: '#1e90ff',
+    textShadow: '0 0 5px rgba(30, 144, 255, 0.7)',
+  },
+  bombText: {
+    fontSize: '28px', fontWeight: 'bold',
+    color: '#f1f2f6',
+    textShadow: '0 0 5px rgba(241, 242, 246, 0.7)',
+  },
+  boardPanel: {
+    display: 'grid',
+    gridTemplateColumns: `repeat(${COLS}, 50px)`, // マスを50pxに固定
+    gap: '6px',
+    justifyContent: 'center',
+    padding: '15px',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // 盤面背景を半透明に
+    borderRadius: '16px',
+    width: 'fit-content',
+    border: '3px solid #1e90ff', // 🌟 ネオンブルーのアウトライン
+    boxShadow: '0 0 15px rgba(30, 144, 255, 0.5), inset 0 0 10px rgba(30, 144, 255, 0.3)', // 🌟 ネオンブルーのグロー
+    transition: 'opacity 0.3s ease-in-out, border-color 0.3s',
+  },
+  block: {
+    width: '50px', height: '50px',
+    borderRadius: '10px',
+    transition: 'transform 0.1s ease-in-out, background-color 0.2s',
+  },
+  bombBtnContainer: {
+    marginTop: '25px', marginBottom: '30px',
+  },
+  bombBtn: {
+    padding: '15px 40px', fontSize: '20px', fontWeight: 'bold', color: 'white',
+    border: 'none', borderRadius: '12px', transition: 'all 0.1s ease-in-out',
+  },
+  bombBtnShadowBlue: '0 0 10px rgba(30, 144, 255, 0.7), 0 0 20px rgba(30, 144, 255, 0.5)',
+  bombBtnShadowRed: '0 0 10px rgba(255, 71, 87, 0.7), 0 0 20px rgba(255, 71, 87, 0.5)',
+  
+  gameOverOverlay: {
+    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10,
+  },
+  gameOverPanel: {
+    backgroundColor: 'rgba(10, 14, 23, 0.95)',
+    border: '3px solid #ff4757', // 赤いネオンアウトライン
+    padding: '40px', borderRadius: '20px', textAlign: 'center',
+    boxShadow: '0 0 20px rgba(255, 71, 87, 0.5)',
+  },
+  timeUpText: {
+    fontSize: '64px', margin: '0 0 15px 0',
+    color: '#ff4757', // 赤いネオンテキスト
+    textShadow: '0 0 10px rgba(255, 71, 87, 0.7), 0 0 20px rgba(255, 71, 87, 0.5)',
+  },
+  finalScoreText: {
+    fontSize: '32px', margin: '0 0 30px 0',
+    color: '#f1f2f6',
+    textShadow: '0 0 5px rgba(241, 242, 246, 0.7)',
+  },
+  goHomeBtn: {
+    padding: '12px 24px', fontSize: '18px', fontWeight: 'bold',
+    backgroundColor: '#1e90ff', color: 'white', border: 'none', borderRadius: '8px',
+    cursor: 'pointer', boxShadow: '0 0 10px rgba(30, 144, 255, 0.7)',
+  },
+};
