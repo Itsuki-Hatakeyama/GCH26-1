@@ -263,6 +263,43 @@ function App() {
         <button onClick={() => playComboSound(5)} style={{...btnStyle, backgroundColor: '#4834d4'}}>音テスト(高)</button>
       </section>
 
+      {/* === フェーズ2：状態変化・消滅系の実験 === */}
+      <section style={sectionStyle}>
+        <h3 style={{...labelStyle, color: '#2ed573'}}>フェーズ2：消滅と状態変化（バースト）</h3>
+        
+        {/* 実験用の的（ターゲットブロック） */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+          <div id="target-block" className="vfx-block target-block" style={{ width: '80px', height: '80px', fontSize: '14px' }}>Target</div>
+        </div>
+
+        <div style={{ textAlign: 'left', fontSize: '12px', color: '#ccc' }}>
+          <p>▼ 2-1. マッチ成立（光り方）</p>
+          <button onClick={() => triggerMatchFlash('white')} style={btnStyle}>白閃光</button>
+          <button onClick={() => triggerMatchFlash('invert')} style={btnStyle}>色反転</button>
+          <button onClick={() => triggerMatchFlash('aura')} style={btnStyle}>オーラ</button>
+
+          <p>▼ 2-2. 消滅アニメーション（形）</p>
+          <button onClick={() => triggerBurstAnim('pop')} style={btnStyle}>ポップ</button>
+          <button onClick={() => triggerBurstAnim('melt')} style={btnStyle}>溶解</button>
+          <button onClick={() => triggerBurstAnim('implode')} style={btnStyle}>爆縮(吸込)</button>
+          <button onClick={() => triggerBurstAnim('fly')} style={btnStyle}>飛翔</button>
+
+          <p>▼ 2-3. 属性パーティクル（色と軌道）</p>
+          <button onClick={() => triggerElementalBurst('fire')} style={{...btnStyle, background: '#ff4757'}}>火(上)</button>
+          <button onClick={() => triggerElementalBurst('water')} style={{...btnStyle, background: '#1e90ff'}}>水(下)</button>
+          <button onClick={() => triggerElementalBurst('wind')} style={{...btnStyle, background: '#2ed573'}}>風(横)</button>
+          <button onClick={() => triggerElementalBurst('thunder')} style={{...btnStyle, background: '#ffa502'}}>雷(速)</button>
+          <button onClick={() => triggerElementalBurst('dark')} style={{...btnStyle, background: '#3742fa'}}>闇(重)</button>
+
+          <p>▼ 2-4. 落下・着地 ＆ 2-5. コンボ</p>
+          <button onClick={() => triggerDrop('light')} style={btnStyle}>通常落下</button>
+          <button onClick={() => triggerDrop('heavy')} style={{...btnStyle, background: '#747d8c'}}>重量落下(+揺れ)</button>
+          <button onClick={() => triggerComboNumber(2)} style={btnStyle}>2コンボ</button>
+          <button onClick={() => triggerComboNumber(6)} style={{...btnStyle, background: '#ff7f50'}}>6コンボ</button>
+          <button onClick={() => triggerComboNumber(12)} style={{...btnStyle, background: '#ff4757'}}>12コンボ</button>
+        </div>
+      </section>
+
       {/* スコアがふわっと出る場所（バックグラウンドで管理） */}
       <AnimatePresence>
         {popups.map(p => (
