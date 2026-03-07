@@ -169,6 +169,58 @@ function App() {
     playComboSound(count); // フェーズ1の音を鳴らす
   };
 
+  // === 【フェーズ3：特殊ギミック・スキル系エフェクト（全21種）】 ===
+
+  // 3-1. ボム・爆発（5種）
+  const triggerBomb = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block bomb-${type}`;
+    if (type === 'mega') {
+      triggerShake('strong');
+      confetti({ particleCount: 200, spread: 360, startVelocity: 50, colors: ['#ff0000', '#ffa500', '#ffff00'] });
+    } else if (type === 'blackhole') {
+      // 0.5秒吸い込んでから爆発！
+      setTimeout(() => {
+        triggerShake('strong');
+        confetti({ particleCount: 150, spread: 360, startVelocity: 60, zIndex: 1000, colors: ['#8a2be2', '#000000', '#ffffff'] });
+      }, 500);
+    } else {
+      triggerShake('mild');
+      confetti({ particleCount: 80, spread: 180, colors: ['#ff4757', '#ffffff'] });
+    }
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 800);
+  };
+
+  // 3-2. ラインクリア（5種：レーザーやウェーブ）
+  const triggerLineClear = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block line-${type}`;
+    triggerShake('mild');
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 600);
+  };
+
+  // 3-3. シャッフル・盤面攪乱（3種）
+  const triggerShuffle = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block shuffle-${type}`;
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 1000);
+  };
+
+  // 3-4. ロック・お邪魔（4種：氷、石、鎖など）
+  const triggerLock = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block lock-${type}`;
+    // ロックは実験として2秒間維持する
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 2000);
+  };
+
+  // 3-5. ゲージ充填・チャージ（4種）
+  const triggerCharge = (type) => {
+    const el = document.getElementById('target-block-skill');
+    el.className = `vfx-block target-block charge-${type}`;
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 1500);
+  };
+
   return (
     <div style={containerStyle}>
       <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
