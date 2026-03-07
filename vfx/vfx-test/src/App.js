@@ -198,6 +198,46 @@ function App() {
           10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
           20%, 40%, 60%, 80% { transform: translateX(10px); }
         }
+
+        /* ブロックの基本スタイル */
+        .vfx-block {
+          width: 60px; height: 60px; background-color: #3742fa;
+          border-radius: 12px; display: flex; align-items: center; justify-content: center;
+          color: white; font-size: 12px; font-weight: bold; cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        /* 1-1. 波紋エフェクト */
+        @keyframes ripple-effect {
+          0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+          100% { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+        }
+
+        /* 1-2. ホールド・選択（浮遊して光る） */
+        .hover-glow:hover {
+          transform: translateY(-5px) scale(1.05);
+          box-shadow: 0 10px 20px rgba(55, 66, 250, 0.6), 0 0 15px rgba(255, 255, 255, 0.5) inset;
+          background-color: #5352ed;
+        }
+
+        /* 1-3. キャンセル戻り（エラー時の首振り） */
+        .error-wobble.active { animation: wobble 0.4s ease-in-out; background-color: #ff4757; }
+        @keyframes wobble {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-8px) rotate(-5deg); }
+          40% { transform: translateX(6px) rotate(4deg); }
+          60% { transform: translateX(-4px) rotate(-2deg); }
+          80% { transform: translateX(2px) rotate(1deg); }
+        }
+
+        /* 1-4. 着地の潰れ（スクワッシュ＆ストレッチ） */
+        .squash-stretch.active { animation: squash 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        @keyframes squash {
+          0% { transform: scale(1, 1) translateY(-20px); }
+          40% { transform: scale(1.3, 0.7) translateY(0); } /* 着地して潰れる */
+          70% { transform: scale(0.8, 1.2) translateY(-5px); } /* 伸びて跳ね返る */
+          100% { transform: scale(1, 1) translateY(0); }
+        }
       `}</style>
     </div>
   );
