@@ -139,6 +139,26 @@ function App() {
             void e.target.offsetWidth;
             e.target.classList.add('active');
           }}>着地<br/>(Click)</div>
+
+          {/* 5. 押し込みと反発（物理ボタンの沈み込み） */}
+          <div className="vfx-block press-bounce">押込<br/>(Press)</div>
+
+          {/* 6. 呼吸・脈動（生きているような明滅） */}
+          <div className="vfx-block breathing" style={{ backgroundColor: '#e84118' }}>呼吸<br/>(Pulse)</div>
+
+          {/* 7. スナップ＆フラッシュ（正しい位置にハマった時の完了合図） */}
+          <div className="vfx-block snap-flash" style={{ position: 'relative' }} onClick={(e) => {
+            e.target.classList.remove('active');
+            void e.target.offsetWidth;
+            e.target.classList.add('active');
+          }}>密着<br/>(Click)</div>
+
+          {/* 8. 壁への衝突（横方向へのベチャッという潰れ） */}
+          <div className="vfx-block wall-bump" style={{ backgroundColor: '#00a8ff' }} onClick={(e) => {
+            e.target.classList.remove('active');
+            void e.target.offsetWidth;
+            e.target.classList.add('active');
+          }}>壁衝突<br/>(Click)</div>
         </div>
       </section>
       
@@ -237,6 +257,59 @@ function App() {
           40% { transform: scale(1.3, 0.7) translateY(0); } /* 着地して潰れる */
           70% { transform: scale(0.8, 1.2) translateY(-5px); } /* 伸びて跳ね返る */
           100% { transform: scale(1, 1) translateY(0); }
+        }
+        
+        /* 1-5. 押し込みと反発（Press & Bounce） */
+        .press-bounce {
+          /* 立体的な影をつけて物理ボタンっぽくする */
+          box-shadow: 0 6px 0 #192a56; 
+          transition: transform 0.1s cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 0.1s;
+        }
+        .press-bounce:active {
+          transform: translateY(4px) scale(0.95); /* 奥に押し込まれる */
+          box-shadow: 0 2px 0 #192a56; /* 影が減る */
+        }
+
+        /* 1-6. 呼吸・脈動（Breathing Glow） */
+        .breathing {
+          animation: breathe 2s infinite ease-in-out;
+        }
+        @keyframes breathe {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 5px rgba(232, 65, 24, 0.2); }
+          50% { transform: scale(1.08); box-shadow: 0 0 20px rgba(232, 65, 24, 0.8); }
+        }
+
+        /* 1-7. スナップ＆フラッシュ（Snap & Flash） */
+        .snap-flash.active {
+          animation: snap-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        /* 白い閃光用の疑似要素（オーバーレイ） */
+        .snap-flash::after {
+          content: ''; position: absolute; inset: 0; background: white;
+          opacity: 0; border-radius: inherit; pointer-events: none;
+        }
+        .snap-flash.active::after {
+          animation: white-flash 0.3s ease-out;
+        }
+        @keyframes snap-in {
+          0% { transform: scale(1.2); }
+          100% { transform: scale(1); }
+        }
+        @keyframes white-flash {
+          0% { opacity: 0.8; }
+          100% { opacity: 0; }
+        }
+
+        /* 1-8. 壁への衝突（Wall Bump / 横方向の潰れ） */
+        .wall-bump.active {
+          animation: bump-right 0.3s ease-out;
+          transform-origin: right center; /* 右側の壁にぶつかる想定 */
+        }
+        @keyframes bump-right {
+          0% { transform: translateX(0) scale(1, 1); }
+          40% { transform: translateX(10px) scale(0.7, 1.2); } /* 右に潰れる */
+          70% { transform: translateX(10px) scale(1.1, 0.9); } /* 逆方向に跳ね返り */
+          100% { transform: translateX(0) scale(1, 1); }
         }
       `}</style>
     </div>
