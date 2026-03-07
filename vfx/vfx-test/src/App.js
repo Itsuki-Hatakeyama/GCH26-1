@@ -420,6 +420,50 @@ function App() {
           70% { transform: translateX(10px) scale(1.1, 0.9); } /* 逆方向に跳ね返り */
           100% { transform: translateX(0) scale(1, 1); }
         }
+
+
+        
+        /* --- フェーズ2用ターゲットブロック --- */
+        .target-block { background-color: #9b59b6; transition: none; }
+
+        /* 2-1. マッチ成立（フラッシュ） */
+        .match-white { filter: brightness(3) contrast(0.5); transform: scale(1.1); }
+        .match-invert { filter: invert(1); transform: scale(0.9); }
+        .match-aura { box-shadow: 0 0 30px 10px rgba(155, 89, 182, 0.8); transform: scale(1.05); }
+
+        /* 2-2. 消滅・バースト */
+        .burst-pop { animation: burst-pop 0.3s forwards; }
+        @keyframes burst-pop {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 1; }
+          100% { transform: scale(0); opacity: 0; }
+        }
+
+        .burst-melt { animation: burst-melt 0.4s forwards; }
+        @keyframes burst-melt {
+          0% { transform: scale(1, 1) translateY(0); opacity: 1; }
+          100% { transform: scale(1.5, 0.2) translateY(20px); opacity: 0; }
+        }
+
+        .burst-implode { animation: burst-implode 0.5s forwards; }
+        @keyframes burst-implode {
+          0% { transform: scale(1) rotate(0); filter: blur(0); }
+          50% { transform: scale(0.2) rotate(180deg); filter: blur(2px); }
+          100% { transform: scale(2) rotate(360deg); opacity: 0; }
+        }
+
+        .burst-fly { animation: burst-fly 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; }
+        @keyframes burst-fly {
+          0% { transform: scale(1) translateY(0); opacity: 1; }
+          100% { transform: scale(0.5) translateY(-100px); opacity: 0; }
+        }
+
+        /* 2-4. 落下・着地 */
+        .drop-anim { animation: drop-down 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53); }
+        @keyframes drop-down {
+          0% { transform: translateY(-100px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
       `}</style>
     </div>
   );
