@@ -221,6 +221,87 @@ function App() {
     setTimeout(() => { el.className = 'vfx-block target-block'; }, 1500);
   };
 
+
+  // === 【フェーズ4：システム・環境系エフェクト（全15種）】 ===
+
+  // 4-1. 開始演出（3種：Ready Go, カウントダウン, カーテン）
+  const triggerStart = (type) => {
+    const el = document.getElementById('system-text-container');
+    if(type === 'ready-go') {
+      el.innerHTML = '<div class="sys-ready">READY...</div>';
+      setTimeout(() => {
+        el.innerHTML = '<div class="sys-go">GO!</div>';
+        confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 }, colors: ['#ff4757', '#ffffff']});
+        triggerShake('mild');
+        setTimeout(() => { el.innerHTML = ''; }, 1000);
+      }, 1500);
+    } else if (type === 'countdown') {
+      let count = 3;
+      el.innerHTML = `<div class="sys-count">${count}</div>`;
+      const timer = setInterval(() => {
+        count--;
+        if(count > 0) { el.innerHTML = `<div class="sys-count">${count}</div>`; }
+        else if(count === 0) {
+          el.innerHTML = '<div class="sys-go" style="color:#2ed573;">START!</div>';
+          triggerConfetti('mega');
+        } else { clearInterval(timer); el.innerHTML = ''; }
+      }, 800);
+    } else if (type === 'curtain') {
+      el.innerHTML = '<div class="sys-curtain-left"></div><div class="sys-curtain-right"></div>';
+      setTimeout(() => { el.innerHTML = ''; }, 1200);
+    }
+  };
+
+  // 4-2. タイムアップ・警告（3種：赤枠点滅など）
+  const triggerWarning = (type) => {
+    const el = document.getElementById('vignette-overlay');
+    if(type === 'on') el.className = 'vignette-pulse'; // ゆっくり点滅（残り1分）
+    else if(type === 'fast') el.className = 'vignette-pulse-fast'; // 高速点滅（残り10秒）
+    else el.className = ''; // 警告解除
+  };
+
+  // 4-3. クリア・勝利（3種）
+  const triggerVictory = (type) => {
+    const el = document.getElementById('system-text-container');
+    if (type === 'clear') {
+      el.innerHTML = '<div class="sys-victory">STAGE CLEAR</div>';
+      triggerConfetti('multi');
+    } else if (type === 'perfect') {
+      el.innerHTML = '<div class="sys-perfect">PERFECT!!</div>';
+      triggerShake('strong');
+      confetti({ particleCount: 300, spread: 360, origin: { y: 0.4 }, colors: ['#feca57', '#ff9f43', '#ffffff'] });
+    } else if (type === 'timeup') {
+      el.innerHTML = '<div class="sys-timeup">TIME UP</div>';
+      triggerShake('mild');
+    }
+    setTimeout(() => { el.innerHTML = ''; }, 3000);
+  };
+
+  // 4-4. ランクアップ・報酬（2種）
+  const triggerReward = (type) => {
+    const el = document.getElementById('system-text-container');
+    if (type === 'treasure') {
+       el.innerHTML = '<div class="sys-treasure">🎁<br/><span style="font-size: 20px;">GET!</span></div>';
+       setTimeout(() => {
+          el.innerHTML = '<div class="sys-treasure-open">✨💎✨<br/><span style="font-size: 20px;">RARE ITEM!</span></div>';
+          confetti({ particleCount: 150, spread: 360, zIndex: 2000 });
+       }, 1200);
+    } else if (type === 'rankup') {
+       el.innerHTML = '<div class="sys-rankup">RANK UP!</div>';
+       triggerConfetti('mega');
+    }
+    setTimeout(() => { el.innerHTML = ''; }, 3000);
+  };
+
+  // 4-5. 背景の揺らぎ・環境（4種）
+  const toggleBackground = (type) => {
+    const el = document.getElementById('bg-effect-layer');
+    if(type === 'cyber') el.className = 'bg-cyber';
+    else if(type === 'magic') el.className = 'bg-magic';
+    else if(type === 'danger') el.className = 'bg-danger';
+    else el.className = '';
+  };
+
   return (
     <div style={containerStyle}>
       <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
