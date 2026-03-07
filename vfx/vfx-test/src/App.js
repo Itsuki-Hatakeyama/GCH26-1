@@ -97,6 +97,78 @@ function App() {
     osc.stop(ctx.currentTime + 0.1);
   };
 
+  // === 【フェーズ2：状態変化・消滅系エフェクト（全17種）】 ===
+
+  // 2-1. マッチ成立（3つ揃った瞬間のフラッシュ：3種）
+  const triggerMatchFlash = (type) => {
+    const el = document.getElementById('target-block');
+    el.className = `vfx-block target-block match-${type}`;
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 400);
+  };
+
+  // 2-2. 消滅・バースト（ブロックが消える時のアニメーション：4種）
+  const triggerBurstAnim = (type) => {
+    const el = document.getElementById('target-block');
+    el.className = `vfx-block target-block burst-${type}`;
+    // 消えた後、元に戻す（実験用）
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 600);
+  };
+
+  // 2-3. 属性・色別パーティクル（物理演算付きの破片：5種）
+  const triggerElementalBurst = (element) => {
+    const defaults = { origin: { y: 0.5 }, zIndex: 1000 };
+    switch (element) {
+      case 'fire': // 火：上に舞い上がる赤とオレンジ
+        confetti({ ...defaults, particleCount: 60, spread: 80, gravity: -0.2, colors: ['#ff4757', '#ffa502', '#ff6348'] });
+        break;
+      case 'water': // 水：重力で落ちる青い飛沫
+        confetti({ ...defaults, particleCount: 80, spread: 100, gravity: 1.5, startVelocity: 20, colors: ['#1e90ff', '#70a1ff', '#ffffff'] });
+        break;
+      case 'thunder': // 雷：超高速で散る黄色と白
+        confetti({ ...defaults, particleCount: 30, spread: 360, startVelocity: 60, decay: 0.9, colors: ['#eccc68', '#ffffff'] });
+        break;
+      case 'wind': // 風：フワッと横に広がる緑
+        confetti({ ...defaults, particleCount: 50, spread: 120, gravity: 0.1, decay: 0.96, colors: ['#2ed573', '#7bed9f'] });
+        break;
+      case 'dark': // 闇：ドロッと落ちる紫と黒
+        confetti({ ...defaults, particleCount: 40, spread: 40, gravity: 0.8, ticks: 100, colors: ['#3742fa', '#2f3542', '#57606f'] });
+        break;
+      default:
+        break;
+    }
+  };
+
+  // 2-4. 落下・着地（土煙と揺れ：2種）
+  const triggerDrop = (weight) => {
+    const el = document.getElementById('target-block');
+    el.className = `vfx-block target-block drop-anim`;
+    
+    setTimeout(() => {
+      // 着地した瞬間のエフェクト
+      if (weight === 'heavy') {
+        triggerShake('strong'); // フェーズ1で作った揺れを再利用！
+        confetti({ particleCount: 40, spread: 90, startVelocity: 15, gravity: 2, origin: { y: 0.55 }, colors: ['#747d8c', '#a4b0be'] }); // 土煙
+      } else {
+        confetti({ particleCount: 15, spread: 50, startVelocity: 10, gravity: 1.5, origin: { y: 0.55 }, colors: ['#ffffff'] }); // 軽いチリ
+      }
+      el.className = 'vfx-block target-block';
+    }, 300); // 落下にかかる時間（0.3秒）後に発動
+  };
+
+  // 2-5. コンボカウント演出（3種）
+  const triggerComboNumber = (count) => {
+    let text = `${count} COMBO!`;
+    let type = 'normal';
+    if (count >= 5) { text = `🔥 ${count} COMBO!! 🔥`; type = 'high'; }
+    if (count >= 10) { text = `⚡️ ${count} MEGA COMBO ⚡️`; type = 'mega'; }
+
+    const id = Date.now();
+    // 既存のaddPopupを拡張して、種類(type)も持たせる
+    setPopups([...popups, { id, text, type }]);
+    setTimeout(() => setPopups(prev => prev.filter(p => p.id !== id)), 1500);
+    playComboSound(count); // フェーズ1の音を鳴らす
+  };
+
   return (
     <div style={containerStyle}>
       <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
@@ -191,15 +263,57 @@ function App() {
         <button onClick={() => playComboSound(5)} style={{...btnStyle, backgroundColor: '#4834d4'}}>音テスト(高)</button>
       </section>
 
+      {/* === フェーズ2：状態変化・消滅系の実験 === */}
+      <section style={sectionStyle}>
+        <h3 style={{...labelStyle, color: '#2ed573'}}>フェーズ2：消滅と状態変化（バースト）</h3>
+        
+        {/* 実験用の的（ターゲットブロック） */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0' }}>
+          <div id="target-block" className="vfx-block target-block" style={{ width: '80px', height: '80px', fontSize: '14px' }}>Target</div>
+        </div>
+
+        <div style={{ textAlign: 'left', fontSize: '12px', color: '#ccc' }}>
+          <p>▼ 2-1. マッチ成立（光り方）</p>
+          <button onClick={() => triggerMatchFlash('white')} style={btnStyle}>白閃光</button>
+          <button onClick={() => triggerMatchFlash('invert')} style={btnStyle}>色反転</button>
+          <button onClick={() => triggerMatchFlash('aura')} style={btnStyle}>オーラ</button>
+
+          <p>▼ 2-2. 消滅アニメーション（形）</p>
+          <button onClick={() => triggerBurstAnim('pop')} style={btnStyle}>ポップ</button>
+          <button onClick={() => triggerBurstAnim('melt')} style={btnStyle}>溶解</button>
+          <button onClick={() => triggerBurstAnim('implode')} style={btnStyle}>爆縮(吸込)</button>
+          <button onClick={() => triggerBurstAnim('fly')} style={btnStyle}>飛翔</button>
+
+          <p>▼ 2-3. 属性パーティクル（色と軌道）</p>
+          <button onClick={() => triggerElementalBurst('fire')} style={{...btnStyle, background: '#ff4757'}}>火(上)</button>
+          <button onClick={() => triggerElementalBurst('water')} style={{...btnStyle, background: '#1e90ff'}}>水(下)</button>
+          <button onClick={() => triggerElementalBurst('wind')} style={{...btnStyle, background: '#2ed573'}}>風(横)</button>
+          <button onClick={() => triggerElementalBurst('thunder')} style={{...btnStyle, background: '#ffa502'}}>雷(速)</button>
+          <button onClick={() => triggerElementalBurst('dark')} style={{...btnStyle, background: '#3742fa'}}>闇(重)</button>
+
+          <p>▼ 2-4. 落下・着地 ＆ 2-5. コンボ</p>
+          <button onClick={() => triggerDrop('light')} style={btnStyle}>通常落下</button>
+          <button onClick={() => triggerDrop('heavy')} style={{...btnStyle, background: '#747d8c'}}>重量落下(+揺れ)</button>
+          <button onClick={() => triggerComboNumber(2)} style={btnStyle}>2コンボ</button>
+          <button onClick={() => triggerComboNumber(6)} style={{...btnStyle, background: '#ff7f50'}}>6コンボ</button>
+          <button onClick={() => triggerComboNumber(12)} style={{...btnStyle, background: '#ff4757'}}>12コンボ</button>
+        </div>
+      </section>
+
       {/* スコアがふわっと出る場所（バックグラウンドで管理） */}
       <AnimatePresence>
         {popups.map(p => (
           <motion.div
             key={p.id}
-            initial={{ opacity: 0, y: 0 }}
-            animate={{ opacity: 1, y: -100 }}
-            exit={{ opacity: 0 }}
-            style={popupStyle}
+            initial={{ opacity: 0, scale: 0.5, y: 0 }}
+            animate={{ opacity: 1, scale: p.type === 'mega' ? 1.5 : (p.type === 'high' ? 1.2 : 1), y: -100 }}
+            exit={{ opacity: 0, scale: 2 }}
+            style={{
+              ...popupStyle,
+              color: p.type === 'mega' ? '#ffd32a' : (p.type === 'high' ? '#ff3f34' : '#0be881'),
+              textShadow: p.type === 'mega' ? '0 0 20px #ff3f34' : '2px 2px 4px rgba(0,0,0,0.5)',
+              fontStyle: p.type === 'normal' ? 'normal' : 'italic'
+            }}
           >
             {p.text}
           </motion.div>
@@ -310,6 +424,50 @@ function App() {
           40% { transform: translateX(10px) scale(0.7, 1.2); } /* 右に潰れる */
           70% { transform: translateX(10px) scale(1.1, 0.9); } /* 逆方向に跳ね返り */
           100% { transform: translateX(0) scale(1, 1); }
+        }
+
+
+
+        /* --- フェーズ2用ターゲットブロック --- */
+        .target-block { background-color: #9b59b6; transition: none; }
+
+        /* 2-1. マッチ成立（フラッシュ） */
+        .match-white { filter: brightness(3) contrast(0.5); transform: scale(1.1); }
+        .match-invert { filter: invert(1); transform: scale(0.9); }
+        .match-aura { box-shadow: 0 0 30px 10px rgba(155, 89, 182, 0.8); transform: scale(1.05); }
+
+        /* 2-2. 消滅・バースト */
+        .burst-pop { animation: burst-pop 0.3s forwards; }
+        @keyframes burst-pop {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.4); opacity: 1; }
+          100% { transform: scale(0); opacity: 0; }
+        }
+
+        .burst-melt { animation: burst-melt 0.4s forwards; }
+        @keyframes burst-melt {
+          0% { transform: scale(1, 1) translateY(0); opacity: 1; }
+          100% { transform: scale(1.5, 0.2) translateY(20px); opacity: 0; }
+        }
+
+        .burst-implode { animation: burst-implode 0.5s forwards; }
+        @keyframes burst-implode {
+          0% { transform: scale(1) rotate(0); filter: blur(0); }
+          50% { transform: scale(0.2) rotate(180deg); filter: blur(2px); }
+          100% { transform: scale(2) rotate(360deg); opacity: 0; }
+        }
+
+        .burst-fly { animation: burst-fly 0.4s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards; }
+        @keyframes burst-fly {
+          0% { transform: scale(1) translateY(0); opacity: 1; }
+          100% { transform: scale(0.5) translateY(-100px); opacity: 0; }
+        }
+
+        /* 2-4. 落下・着地 */
+        .drop-anim { animation: drop-down 0.3s cubic-bezier(0.55, 0.085, 0.68, 0.53); }
+        @keyframes drop-down {
+          0% { transform: translateY(-100px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
         }
       `}</style>
     </div>
