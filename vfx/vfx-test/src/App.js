@@ -63,6 +63,40 @@ function App() {
     osc.stop(ctx.currentTime + 0.5);
   };
 
+  // === 【フェーズ1：操作・入力系エフェクト】 ===
+
+  // 1-1. タップ波紋（画面のどこでも触れた感覚をフィードバック）
+  const triggerRipple = (e) => {
+    // ボタンのクリックイベントから座標を取得
+    const rect = e.target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const newRipple = { id: Date.now(), x, y };
+    setRipples((prev) => [...prev, newRipple]);
+    // 1秒後に波紋のデータを消す
+    setTimeout(() => {
+      setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+    }, 1000);
+  };
+
+  // 1-2. 操作音（ピッチが少し変わるランダムなタップ音で無機質さを消す）
+  const playTapSound = () => {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    // 800Hz〜1000Hzの間でランダムに音程を変え、機械的な印象をなくす（Juiceの基本）
+    const randomPitch = 800 + Math.random() * 200;
+    osc.frequency.setValueAtTime(randomPitch, ctx.currentTime);
+    osc.type = 'triangle'; // 丸みのある音
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.1);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  };
+
   return (
     <div style={containerStyle}>
       <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
