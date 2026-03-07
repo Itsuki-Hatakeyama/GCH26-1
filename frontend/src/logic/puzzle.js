@@ -102,7 +102,7 @@ export function calculateScore(removedCount) {
  * 5. チートアイテム：ボム（爆弾）
  * 指定された中心座標(centerX, centerY)の周囲3×3マスを問答無用で0(空)にします。
  */
-export function useBomb(board, centerX, centerY) {
+export function activateBomb(board, centerX, centerY) {
   const newBoard = board.map(row => [...row]);
   let removedCount = 0;
 

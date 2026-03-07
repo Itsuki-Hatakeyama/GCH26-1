@@ -6,10 +6,10 @@ import {
   removeBlocks,
   dropBlocks,
   calculateScore,
-  useBomb,
+  activateBomb,
   ROWS,
   COLS
-} from '../../../logic/puzzle';
+} from '../logic/puzzle';
 
 export default function PuzzleBoard() {
   // --- 状態（State）の管理 ---
@@ -34,7 +34,7 @@ export default function PuzzleBoard() {
 
     // 💣 ボムモードがONの場合
     if (isBombMode) {
-      const result = useBomb(board, x, y);
+      const result = activateBomb(board, x, y);
       resultBoard = result.newBoard;
       removedCount = result.removedCount;
       
