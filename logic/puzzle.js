@@ -48,6 +48,7 @@ export function removeBlocks(board, startX, startY) {
 
   dfs(startX, startY);
 
+  // 2個以上繋がっていれば消す
   if (connectedBlocks.length >= 2) {
     const newBoard = board.map(row => [...row]);
     connectedBlocks.forEach(block => {
@@ -85,4 +86,36 @@ export function dropBlocks(board) {
   }
 
   return newBoard;
+}
+
+/**
+ * 4. スコア計算
+ * 消した数（removedCount）をもとに獲得スコアを計算します。
+ * まとめて消すほど点数が跳ね上がる（2乗）仕組みです！
+ */
+export function calculateScore(removedCount) {
+  if (removedCount < 2) return 0;
+  return removedCount * removedCount * 10;
+}
+
+/**
+ * 5. チートアイテム：ボム（爆弾）
+ * 指定された中心座標(centerX, centerY)の周囲3×3マスを問答無用で0(空)にします。
+ */
+export function useBomb(board, centerX, centerY) {
+  const newBoard = board.map(row => [...row]);
+  let removedCount = 0;
+
+  for (let y = centerY - 1; y <= centerY + 1; y++) {
+    for (let x = centerX - 1; x <= centerX + 1; x++) {
+      if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
+        if (newBoard[y][x] !== 0) {
+          newBoard[y][x] = 0;
+          removedCount++;
+        }
+      }
+    }
+  }
+
+  return { newBoard, removedCount };
 }
