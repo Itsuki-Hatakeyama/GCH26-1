@@ -97,6 +97,78 @@ function App() {
     osc.stop(ctx.currentTime + 0.1);
   };
 
+  // === 【フェーズ2：状態変化・消滅系エフェクト（全17種）】 ===
+
+  // 2-1. マッチ成立（3つ揃った瞬間のフラッシュ：3種）
+  const triggerMatchFlash = (type) => {
+    const el = document.getElementById('target-block');
+    el.className = `vfx-block target-block match-${type}`;
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 400);
+  };
+
+  // 2-2. 消滅・バースト（ブロックが消える時のアニメーション：4種）
+  const triggerBurstAnim = (type) => {
+    const el = document.getElementById('target-block');
+    el.className = `vfx-block target-block burst-${type}`;
+    // 消えた後、元に戻す（実験用）
+    setTimeout(() => { el.className = 'vfx-block target-block'; }, 600);
+  };
+
+  // 2-3. 属性・色別パーティクル（物理演算付きの破片：5種）
+  const triggerElementalBurst = (element) => {
+    const defaults = { origin: { y: 0.5 }, zIndex: 1000 };
+    switch (element) {
+      case 'fire': // 火：上に舞い上がる赤とオレンジ
+        confetti({ ...defaults, particleCount: 60, spread: 80, gravity: -0.2, colors: ['#ff4757', '#ffa502', '#ff6348'] });
+        break;
+      case 'water': // 水：重力で落ちる青い飛沫
+        confetti({ ...defaults, particleCount: 80, spread: 100, gravity: 1.5, startVelocity: 20, colors: ['#1e90ff', '#70a1ff', '#ffffff'] });
+        break;
+      case 'thunder': // 雷：超高速で散る黄色と白
+        confetti({ ...defaults, particleCount: 30, spread: 360, startVelocity: 60, decay: 0.9, colors: ['#eccc68', '#ffffff'] });
+        break;
+      case 'wind': // 風：フワッと横に広がる緑
+        confetti({ ...defaults, particleCount: 50, spread: 120, gravity: 0.1, decay: 0.96, colors: ['#2ed573', '#7bed9f'] });
+        break;
+      case 'dark': // 闇：ドロッと落ちる紫と黒
+        confetti({ ...defaults, particleCount: 40, spread: 40, gravity: 0.8, ticks: 100, colors: ['#3742fa', '#2f3542', '#57606f'] });
+        break;
+      default:
+        break;
+    }
+  };
+
+  // 2-4. 落下・着地（土煙と揺れ：2種）
+  const triggerDrop = (weight) => {
+    const el = document.getElementById('target-block');
+    el.className = `vfx-block target-block drop-anim`;
+    
+    setTimeout(() => {
+      // 着地した瞬間のエフェクト
+      if (weight === 'heavy') {
+        triggerShake('strong'); // フェーズ1で作った揺れを再利用！
+        confetti({ particleCount: 40, spread: 90, startVelocity: 15, gravity: 2, origin: { y: 0.55 }, colors: ['#747d8c', '#a4b0be'] }); // 土煙
+      } else {
+        confetti({ particleCount: 15, spread: 50, startVelocity: 10, gravity: 1.5, origin: { y: 0.55 }, colors: ['#ffffff'] }); // 軽いチリ
+      }
+      el.className = 'vfx-block target-block';
+    }, 300); // 落下にかかる時間（0.3秒）後に発動
+  };
+
+  // 2-5. コンボカウント演出（3種）
+  const triggerComboNumber = (count) => {
+    let text = `${count} COMBO!`;
+    let type = 'normal';
+    if (count >= 5) { text = `🔥 ${count} COMBO!! 🔥`; type = 'high'; }
+    if (count >= 10) { text = `⚡️ ${count} MEGA COMBO ⚡️`; type = 'mega'; }
+
+    const id = Date.now();
+    // 既存のaddPopupを拡張して、種類(type)も持たせる
+    setPopups([...popups, { id, text, type }]);
+    setTimeout(() => setPopups(prev => prev.filter(p => p.id !== id)), 1500);
+    playComboSound(count); // フェーズ1の音を鳴らす
+  };
+
   return (
     <div style={containerStyle}>
       <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
