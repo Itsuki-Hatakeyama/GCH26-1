@@ -352,6 +352,50 @@ function App() {
         </div>
       </section>
 
+
+      {/* === フェーズ3：特殊ギミック・スキル系の実験 === */}
+      <section style={sectionStyle}>
+        <h3 style={{...labelStyle, color: '#e056fd'}}>フェーズ3：必殺技・特殊ギミック（スキル）</h3>
+        
+        {/* 実験用の的2（スキル用ターゲットブロック） */}
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '30px 0' }}>
+          <div id="target-block-skill" className="vfx-block target-block" style={{ width: '80px', height: '80px', fontSize: '14px', position: 'relative' }}>Skill</div>
+        </div>
+
+        <div style={{ textAlign: 'left', fontSize: '12px', color: '#ccc' }}>
+          <p>▼ 3-1. ボム・特殊爆発</p>
+          <button onClick={() => triggerBomb('cross')} style={btnStyle}>十字爆発</button>
+          <button onClick={() => triggerBomb('mega')} style={btnStyle}>メガボム</button>
+          <button onClick={() => triggerBomb('blackhole')} style={btnStyle}>ﾌﾞﾗｯｸﾎｰﾙ</button>
+          <button onClick={() => triggerBomb('firework')} style={btnStyle}>花火連発</button>
+          <button onClick={() => triggerBomb('x-burst')} style={btnStyle}>Xバースト</button>
+
+          <p>▼ 3-2. ラインクリア（一列消去）</p>
+          <button onClick={() => triggerLineClear('horiz')} style={btnStyle}>水平レーザー</button>
+          <button onClick={() => triggerLineClear('vert')} style={btnStyle}>垂直レーザー</button>
+          <button onClick={() => triggerLineClear('cross-laser')} style={btnStyle}>十字レーザー</button>
+          <button onClick={() => triggerLineClear('slash')} style={btnStyle}>斜め斬撃</button>
+          <button onClick={() => triggerLineClear('wave')} style={btnStyle}>水波(ウェーブ)</button>
+
+          <p>▼ 3-3. シャッフル（盤面攪乱）</p>
+          <button onClick={() => triggerShuffle('tornado')} style={btnStyle}>竜巻</button>
+          <button onClick={() => triggerShuffle('flip')} style={btnStyle}>フリップ</button>
+          <button onClick={() => triggerShuffle('bounce')} style={btnStyle}>大バウンス</button>
+
+          <p>▼ 3-4. ロック・お邪魔（状態異常）</p>
+          <button onClick={() => triggerLock('ice')} style={{...btnStyle, background: '#7efff5', color: '#000'}}>氷結(Ice)</button>
+          <button onClick={() => triggerLock('stone')} style={{...btnStyle, background: '#a4b0be', color: '#000'}}>石化(Stone)</button>
+          <button onClick={() => triggerLock('chain')} style={{...btnStyle, background: '#747d8c'}}>鎖(Chain)</button>
+          <button onClick={() => triggerLock('slime')} style={{...btnStyle, background: '#badc58', color: '#000'}}>粘液(Slime)</button>
+
+          <p>▼ 3-5. ゲージ充填（チャージ・準備）</p>
+          <button onClick={() => triggerCharge('aura')} style={{...btnStyle, background: '#feca57', color: '#000'}}>黄金オーラ</button>
+          <button onClick={() => triggerCharge('sparkle')} style={{...btnStyle, background: '#ffbe76', color: '#000'}}>星の集積</button>
+          <button onClick={() => triggerCharge('pulse')} style={{...btnStyle, background: '#ff7979'}}>脈動チャージ</button>
+          <button onClick={() => triggerCharge('overheat')} style={{...btnStyle, background: '#eb4d4b'}}>オーバーヒート</button>
+        </div>
+      </section>
+
       {/* スコアがふわっと出る場所（バックグラウンドで管理） */}
       <AnimatePresence>
         {popups.map(p => (
