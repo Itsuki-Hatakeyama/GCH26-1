@@ -6,6 +6,9 @@ function App() {
   // --- フロント側：状態管理（スコアポップアップ用など） ---
   const [popups, setPopups] = useState([]);
 
+  // --- フロント側：入力系エフェクトの状態管理 ---
+  const [ripples, setRipples] = useState([]);
+
   // --- 演出関数 1: 画面シェイク（強弱2パターン） ---
   const triggerShake = (type) => {
     const el = document.getElementById('root');
