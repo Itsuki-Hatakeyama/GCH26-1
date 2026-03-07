@@ -304,9 +304,16 @@ function App() {
 
   return (
     <div style={containerStyle}>
-      <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
-
-      <div id="vfx-screen-overlay" style={overlayStyle}></div>
+      {/* 背景エフェクト層（一番奥） */}
+      <div id="bg-effect-layer" style={bgLayerStyle}></div>
+      
+      <h1 style={{ color: '#fff', position: 'relative', zIndex: 10 }}>VFX 演出量産パネル 🧪</h1>
+      
+      {/* 警告用赤枠（手前） */}
+      <div id="vignette-overlay" style={vignetteStyle}></div>
+      
+      {/* システム文字用（一番手前） */}
+      <div id="system-text-container" style={sysTextStyle}></div>
 
 
     {/* === フェーズ1：操作・入力系の実験 === */}
@@ -474,6 +481,37 @@ function App() {
           <button onClick={() => triggerCharge('sparkle')} style={{...btnStyle, background: '#ffbe76', color: '#000'}}>星の集積</button>
           <button onClick={() => triggerCharge('pulse')} style={{...btnStyle, background: '#ff7979'}}>脈動チャージ</button>
           <button onClick={() => triggerCharge('overheat')} style={{...btnStyle, background: '#eb4d4b'}}>オーバーヒート</button>
+        </div>
+      </section>
+
+
+      {/* === フェーズ4：システム・環境系の実験 === */}
+      <section style={{...sectionStyle, position: 'relative', zIndex: 10}}>
+        <h3 style={{...labelStyle, color: '#feca57'}}>フェーズ4：システムと環境（全体演出）</h3>
+        
+        <div style={{ textAlign: 'left', fontSize: '12px', color: '#ccc' }}>
+          <p>▼ 4-1. 開始演出</p>
+          <button onClick={() => triggerStart('ready-go')} style={btnStyle}>Ready Go!</button>
+          <button onClick={() => triggerStart('countdown')} style={btnStyle}>3,2,1 カウント</button>
+          <button onClick={() => triggerStart('curtain')} style={btnStyle}>幕開け</button>
+
+          <p>▼ 4-2. タイムアップ警告（画面の縁が赤くなる）</p>
+          <button onClick={() => triggerWarning('on')} style={{...btnStyle, background: '#eb4d4b'}}>警告オン(遅)</button>
+          <button onClick={() => triggerWarning('fast')} style={{...btnStyle, background: '#ff3838'}}>警告オン(速)</button>
+          <button onClick={() => triggerWarning('off')} style={btnStyle}>警告オフ</button>
+
+          <p>▼ 4-3. 勝利・終了 ＆ 4-4. 報酬</p>
+          <button onClick={() => triggerVictory('clear')} style={{...btnStyle, background: '#2ed573'}}>クリア</button>
+          <button onClick={() => triggerVictory('perfect')} style={{...btnStyle, background: '#feca57', color: '#000'}}>PERFECT</button>
+          <button onClick={() => triggerVictory('timeup')} style={{...btnStyle, background: '#57606f'}}>TIME UP</button>
+          <button onClick={() => triggerReward('treasure')} style={{...btnStyle, background: '#a29bfe', color: '#000'}}>宝箱開封</button>
+          <button onClick={() => triggerReward('rankup')} style={{...btnStyle, background: '#fd79a8', color: '#000'}}>ランクアップ</button>
+
+          <p>▼ 4-5. 背景の環境効果</p>
+          <button onClick={() => toggleBackground('cyber')} style={btnStyle}>サイバー(網目)</button>
+          <button onClick={() => toggleBackground('magic')} style={btnStyle}>魔法(粒子)</button>
+          <button onClick={() => toggleBackground('danger')} style={{...btnStyle, background: '#eb4d4b'}}>危険(赤波)</button>
+          <button onClick={() => toggleBackground('off')} style={btnStyle}>背景オフ</button>
         </div>
       </section>
 
