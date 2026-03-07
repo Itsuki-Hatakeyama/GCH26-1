@@ -1,34 +1,62 @@
 import React, { useState } from 'react';
 import './App.css';
 
-// 4つの画面部品（コンポーネント）を読み込む
+import Login from './components/Login'; // ★追加
 import Home from './components/Home';
 import Timer from './components/Timer';
 import Ranking from './components/Ranking';
 import PuzzleBoard from './components/PuzzleBoard';
 
 function App() {
-  // 現在表示している画面の状態
+  // ★追加：ログインしているユーザーの情報を保存する場所（最初は誰もログインしていないので null）
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // 画面遷移用の状態（最初はホーム画面）
   const [view, setView] = useState('home');
 
-  // ① ホーム画面（onNavigateでsetView関数を渡す）
+  // ★追加：まだログインしていなければ、強制的にLogin画面を表示！
+  if (!currentUser) {
+    return (
+      <Login 
+        onLogin={(userId) => {
+          // ログインボタンが押されたら、ここでユーザーIDを保存する
+          setCurrentUser({ id: userId });
+          setView('home'); // ホーム画面に移動
+        }} 
+      />
+    );
+  }
+
+  // --------------------------------------------------------
+  // ここから下は、ログイン済みの人だけが見れる画面です！
+  // --------------------------------------------------------
+
+  // ① ホーム画面
   if (view === 'home') {
-    return <Home onNavigate={setView} />;
+    return (
+      <div>
+        {/* テスト用に、画面右上にログイン中のIDを表示してみましょう */}
+        <div style={{ position: 'absolute', top: 10, right: 10, color: '#c4b5fd', fontSize: '14px' }}>
+          ID: {currentUser.id}
+        </div>
+        <Home onNavigate={setView} />
+      </div>
+    );
   }
 
-  // ② タイマー画面
+  // ② タイマー画面（currentUserを渡す！）
   if (view === 'timer') {
-    return <Timer onBack={() => setView('home')} />;
+    return <Timer onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ③ ランキング画面
+  // ③ ランキング画面（念のため渡しておく）
   if (view === 'ranking') {
-    return <Ranking onBack={() => setView('home')} />;
+    return <Ranking onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ④ ゲーム画面
+  // ④ ゲーム画面（currentUserを渡す！）
   if (view === 'game') {
-    return <PuzzleBoard onBack={() => setView('home')} />;
+    return <PuzzleBoard onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
   return null;
