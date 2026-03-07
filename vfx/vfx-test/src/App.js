@@ -305,10 +305,15 @@ function App() {
         {popups.map(p => (
           <motion.div
             key={p.id}
-            initial={{ opacity: 0, y: 0 }}
-            animate={{ opacity: 1, y: -100 }}
-            exit={{ opacity: 0 }}
-            style={popupStyle}
+            initial={{ opacity: 0, scale: 0.5, y: 0 }}
+            animate={{ opacity: 1, scale: p.type === 'mega' ? 1.5 : (p.type === 'high' ? 1.2 : 1), y: -100 }}
+            exit={{ opacity: 0, scale: 2 }}
+            style={{
+              ...popupStyle,
+              color: p.type === 'mega' ? '#ffd32a' : (p.type === 'high' ? '#ff3f34' : '#0be881'),
+              textShadow: p.type === 'mega' ? '0 0 20px #ff3f34' : '2px 2px 4px rgba(0,0,0,0.5)',
+              fontStyle: p.type === 'normal' ? 'normal' : 'italic'
+            }}
           >
             {p.text}
           </motion.div>
@@ -422,7 +427,7 @@ function App() {
         }
 
 
-        
+
         /* --- フェーズ2用ターゲットブロック --- */
         .target-block { background-color: #9b59b6; transition: none; }
 
