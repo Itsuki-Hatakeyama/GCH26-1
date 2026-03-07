@@ -221,11 +221,99 @@ function App() {
     setTimeout(() => { el.className = 'vfx-block target-block'; }, 1500);
   };
 
+
+  // === 【フェーズ4：システム・環境系エフェクト（全15種）】 ===
+
+  // 4-1. 開始演出（3種：Ready Go, カウントダウン, カーテン）
+  const triggerStart = (type) => {
+    const el = document.getElementById('system-text-container');
+    if(type === 'ready-go') {
+      el.innerHTML = '<div class="sys-ready">READY...</div>';
+      setTimeout(() => {
+        el.innerHTML = '<div class="sys-go">GO!</div>';
+        confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 }, colors: ['#ff4757', '#ffffff']});
+        triggerShake('mild');
+        setTimeout(() => { el.innerHTML = ''; }, 1000);
+      }, 1500);
+    } else if (type === 'countdown') {
+      let count = 3;
+      el.innerHTML = `<div class="sys-count">${count}</div>`;
+      const timer = setInterval(() => {
+        count--;
+        if(count > 0) { el.innerHTML = `<div class="sys-count">${count}</div>`; }
+        else if(count === 0) {
+          el.innerHTML = '<div class="sys-go" style="color:#2ed573;">START!</div>';
+          triggerConfetti('mega');
+        } else { clearInterval(timer); el.innerHTML = ''; }
+      }, 800);
+    } else if (type === 'curtain') {
+      el.innerHTML = '<div class="sys-curtain-left"></div><div class="sys-curtain-right"></div>';
+      setTimeout(() => { el.innerHTML = ''; }, 1200);
+    }
+  };
+
+  // 4-2. タイムアップ・警告（3種：赤枠点滅など）
+  const triggerWarning = (type) => {
+    const el = document.getElementById('vignette-overlay');
+    if(type === 'on') el.className = 'vignette-pulse'; // ゆっくり点滅（残り1分）
+    else if(type === 'fast') el.className = 'vignette-pulse-fast'; // 高速点滅（残り10秒）
+    else el.className = ''; // 警告解除
+  };
+
+  // 4-3. クリア・勝利（3種）
+  const triggerVictory = (type) => {
+    const el = document.getElementById('system-text-container');
+    if (type === 'clear') {
+      el.innerHTML = '<div class="sys-victory">STAGE CLEAR</div>';
+      triggerConfetti('multi');
+    } else if (type === 'perfect') {
+      el.innerHTML = '<div class="sys-perfect">PERFECT!!</div>';
+      triggerShake('strong');
+      confetti({ particleCount: 300, spread: 360, origin: { y: 0.4 }, colors: ['#feca57', '#ff9f43', '#ffffff'] });
+    } else if (type === 'timeup') {
+      el.innerHTML = '<div class="sys-timeup">TIME UP</div>';
+      triggerShake('mild');
+    }
+    setTimeout(() => { el.innerHTML = ''; }, 3000);
+  };
+
+  // 4-4. ランクアップ・報酬（2種）
+  const triggerReward = (type) => {
+    const el = document.getElementById('system-text-container');
+    if (type === 'treasure') {
+       el.innerHTML = '<div class="sys-treasure">🎁<br/><span style="font-size: 20px;">GET!</span></div>';
+       setTimeout(() => {
+          el.innerHTML = '<div class="sys-treasure-open">✨💎✨<br/><span style="font-size: 20px;">RARE ITEM!</span></div>';
+          confetti({ particleCount: 150, spread: 360, zIndex: 2000 });
+       }, 1200);
+    } else if (type === 'rankup') {
+       el.innerHTML = '<div class="sys-rankup">RANK UP!</div>';
+       triggerConfetti('mega');
+    }
+    setTimeout(() => { el.innerHTML = ''; }, 3000);
+  };
+
+  // 4-5. 背景の揺らぎ・環境（4種）
+  const toggleBackground = (type) => {
+    const el = document.getElementById('bg-effect-layer');
+    if(type === 'cyber') el.className = 'bg-cyber';
+    else if(type === 'magic') el.className = 'bg-magic';
+    else if(type === 'danger') el.className = 'bg-danger';
+    else el.className = '';
+  };
+
   return (
     <div style={containerStyle}>
-      <h1 style={{ color: '#fff' }}>VFX 演出量産パネル 🧪</h1>
-
-      <div id="vfx-screen-overlay" style={overlayStyle}></div>
+      {/* 背景エフェクト層（一番奥） */}
+      <div id="bg-effect-layer" style={bgLayerStyle}></div>
+      
+      <h1 style={{ color: '#fff', position: 'relative', zIndex: 10 }}>VFX 演出量産パネル 🧪</h1>
+      
+      {/* 警告用赤枠（手前） */}
+      <div id="vignette-overlay" style={vignetteStyle}></div>
+      
+      {/* システム文字用（一番手前） */}
+      <div id="system-text-container" style={sysTextStyle}></div>
 
 
     {/* === フェーズ1：操作・入力系の実験 === */}
@@ -393,6 +481,37 @@ function App() {
           <button onClick={() => triggerCharge('sparkle')} style={{...btnStyle, background: '#ffbe76', color: '#000'}}>星の集積</button>
           <button onClick={() => triggerCharge('pulse')} style={{...btnStyle, background: '#ff7979'}}>脈動チャージ</button>
           <button onClick={() => triggerCharge('overheat')} style={{...btnStyle, background: '#eb4d4b'}}>オーバーヒート</button>
+        </div>
+      </section>
+
+
+      {/* === フェーズ4：システム・環境系の実験 === */}
+      <section style={{...sectionStyle, position: 'relative', zIndex: 10}}>
+        <h3 style={{...labelStyle, color: '#feca57'}}>フェーズ4：システムと環境（全体演出）</h3>
+        
+        <div style={{ textAlign: 'left', fontSize: '12px', color: '#ccc' }}>
+          <p>▼ 4-1. 開始演出</p>
+          <button onClick={() => triggerStart('ready-go')} style={btnStyle}>Ready Go!</button>
+          <button onClick={() => triggerStart('countdown')} style={btnStyle}>3,2,1 カウント</button>
+          <button onClick={() => triggerStart('curtain')} style={btnStyle}>幕開け</button>
+
+          <p>▼ 4-2. タイムアップ警告（画面の縁が赤くなる）</p>
+          <button onClick={() => triggerWarning('on')} style={{...btnStyle, background: '#eb4d4b'}}>警告オン(遅)</button>
+          <button onClick={() => triggerWarning('fast')} style={{...btnStyle, background: '#ff3838'}}>警告オン(速)</button>
+          <button onClick={() => triggerWarning('off')} style={btnStyle}>警告オフ</button>
+
+          <p>▼ 4-3. 勝利・終了 ＆ 4-4. 報酬</p>
+          <button onClick={() => triggerVictory('clear')} style={{...btnStyle, background: '#2ed573'}}>クリア</button>
+          <button onClick={() => triggerVictory('perfect')} style={{...btnStyle, background: '#feca57', color: '#000'}}>PERFECT</button>
+          <button onClick={() => triggerVictory('timeup')} style={{...btnStyle, background: '#57606f'}}>TIME UP</button>
+          <button onClick={() => triggerReward('treasure')} style={{...btnStyle, background: '#a29bfe', color: '#000'}}>宝箱開封</button>
+          <button onClick={() => triggerReward('rankup')} style={{...btnStyle, background: '#fd79a8', color: '#000'}}>ランクアップ</button>
+
+          <p>▼ 4-5. 背景の環境効果</p>
+          <button onClick={() => toggleBackground('cyber')} style={btnStyle}>サイバー(網目)</button>
+          <button onClick={() => toggleBackground('magic')} style={btnStyle}>魔法(粒子)</button>
+          <button onClick={() => toggleBackground('danger')} style={{...btnStyle, background: '#eb4d4b'}}>危険(赤波)</button>
+          <button onClick={() => toggleBackground('off')} style={btnStyle}>背景オフ</button>
         </div>
       </section>
 
@@ -638,6 +757,48 @@ function App() {
 
         .charge-overheat { animation: overheat 1.5s forwards; }
         @keyframes overheat { 0% { background-color: #3742fa; } 30% { background-color: #ff5252; box-shadow: 0 0 10px #ff5252; } 70% { background-color: #ff3838; box-shadow: 0 0 30px #ff3838; transform: translate(2px, -2px); } 100% { background-color: #3742fa; } }
+
+
+        /* --- フェーズ4：システム・環境系CSS --- */
+        
+        /* 4-1 & 4-3 & 4-4: テキスト演出 */
+        .sys-ready { font-size: 50px; color: #fff; text-shadow: 0 0 20px #0abde3; animation: pop-in 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .sys-go { font-size: 80px; color: #ff4757; text-shadow: 0 0 30px #ff4757; font-weight: 900; animation: blast-out 1s ease-out forwards; }
+        .sys-count { font-size: 100px; color: #feca57; animation: count-ping 0.8s ease-out forwards; }
+        .sys-victory { font-size: 60px; color: #2ed573; text-shadow: 0 0 20px #2ed573; animation: slide-in-bounce 1s forwards; background: rgba(0,0,0,0.5); padding: 20px 100vw; }
+        .sys-perfect { font-size: 70px; color: #feca57; font-style: italic; letter-spacing: 5px; animation: perfect-shine 2s forwards; }
+        .sys-timeup { font-size: 60px; color: #747d8c; text-shadow: 4px 4px 0 #000; animation: drop-down 0.5s forwards; }
+        .sys-treasure, .sys-treasure-open { font-size: 50px; text-align: center; color: white; animation: float-up 1s forwards; }
+        .sys-treasure { animation: wobble 1s infinite; }
+        .sys-rankup { font-size: 70px; color: #fd79a8; text-shadow: 0 0 20px #fd79a8; animation: scale-up-fade 2s forwards; }
+
+        @keyframes pop-in { 0% { transform: scale(3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes blast-out { 0% { transform: scale(0.5); opacity: 1; } 20% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        @keyframes count-ping { 0% { transform: scale(2); opacity: 0; } 20% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.5); opacity: 0; } }
+        @keyframes slide-in-bounce { 0% { transform: translateX(-100vw) skewX(-20deg); } 60% { transform: translateX(20px) skewX(0); } 100% { transform: translateX(0); } }
+        @keyframes perfect-shine { 0% { filter: brightness(1) drop-shadow(0 0 0 #feca57); transform: scale(0.8); } 50% { filter: brightness(2) drop-shadow(0 0 50px #feca57); transform: scale(1.1); } 100% { filter: brightness(1); transform: scale(1); opacity: 0; } }
+
+        /* 幕開け演出 */
+        .sys-curtain-left, .sys-curtain-right { position: absolute; top: 0; width: 50vw; height: 100vh; background: #000; z-index: 1999; }
+        .sys-curtain-left { left: 0; animation: curtain-l 1.2s ease-in-out forwards; }
+        .sys-curtain-right { right: 0; animation: curtain-r 1.2s ease-in-out forwards; }
+        @keyframes curtain-l { 0%, 20% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        @keyframes curtain-r { 0%, 20% { transform: translateX(0); } 100% { transform: translateX(100%); } }
+
+        /* 4-2. タイムアップ警告（ビネット） */
+        .vignette-pulse { box-shadow: inset 0 0 100px 20px rgba(255, 0, 0, 0); animation: vig-pulse 2s infinite; }
+        .vignette-pulse-fast { box-shadow: inset 0 0 150px 40px rgba(255, 0, 0, 0); animation: vig-pulse 0.5s infinite; }
+        @keyframes vig-pulse { 0%, 100% { box-shadow: inset 0 0 50px 0px rgba(255, 0, 0, 0); } 50% { box-shadow: inset 0 0 150px 30px rgba(235, 77, 75, 0.8); } }
+
+        /* 4-5. 背景環境 */
+        .bg-cyber { background: linear-gradient(transparent 95%, rgba(0, 210, 211, 0.3) 100%), linear-gradient(90deg, transparent 95%, rgba(0, 210, 211, 0.3) 100%); background-size: 40px 40px; animation: bg-scroll 2s linear infinite; }
+        @keyframes bg-scroll { from { background-position: 0 0; } to { background-position: 40px 40px; } }
+        
+        .bg-danger { background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #eb4d4b 150%); animation: bg-breathe 2s infinite alternate; }
+        @keyframes bg-breathe { from { opacity: 0.5; } to { opacity: 1; } }
+
+        .bg-magic { background-image: radial-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px); background-size: 30px 30px; animation: magic-float 10s linear infinite; }
+        @keyframes magic-float { from { background-position: 0 0; } to { background-position: 100px -100px; } }
       `}</style>
     </div>
   );
@@ -649,9 +810,10 @@ const sectionStyle = { border: '1px solid #57606f', borderRadius: '10px', paddin
 const labelStyle = { color: '#ced6e0', fontSize: '14px' };
 const btnStyle = { margin: '5px', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer', border: 'none', fontWeight: 'bold' };
 const popupStyle = { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', color: '#7bed9f', fontSize: '2rem', fontWeight: 'bold', pointerEvents: 'none' };
-const overlayStyle = {
-  position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-  backgroundColor: 'rgba(255, 0, 0, 0.3)', display: 'none', pointerEvents: 'none', zIndex: 999
-};
 
+
+
+const bgLayerStyle = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 0, transition: 'all 0.5s' };
+const vignetteStyle = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 1500, transition: 'all 0.3s' };
+const sysTextStyle = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' };
 export default App;
