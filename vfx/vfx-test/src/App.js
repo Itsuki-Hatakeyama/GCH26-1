@@ -757,6 +757,48 @@ function App() {
 
         .charge-overheat { animation: overheat 1.5s forwards; }
         @keyframes overheat { 0% { background-color: #3742fa; } 30% { background-color: #ff5252; box-shadow: 0 0 10px #ff5252; } 70% { background-color: #ff3838; box-shadow: 0 0 30px #ff3838; transform: translate(2px, -2px); } 100% { background-color: #3742fa; } }
+
+
+        /* --- フェーズ4：システム・環境系CSS --- */
+        
+        /* 4-1 & 4-3 & 4-4: テキスト演出 */
+        .sys-ready { font-size: 50px; color: #fff; text-shadow: 0 0 20px #0abde3; animation: pop-in 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .sys-go { font-size: 80px; color: #ff4757; text-shadow: 0 0 30px #ff4757; font-weight: 900; animation: blast-out 1s ease-out forwards; }
+        .sys-count { font-size: 100px; color: #feca57; animation: count-ping 0.8s ease-out forwards; }
+        .sys-victory { font-size: 60px; color: #2ed573; text-shadow: 0 0 20px #2ed573; animation: slide-in-bounce 1s forwards; background: rgba(0,0,0,0.5); padding: 20px 100vw; }
+        .sys-perfect { font-size: 70px; color: #feca57; font-style: italic; letter-spacing: 5px; animation: perfect-shine 2s forwards; }
+        .sys-timeup { font-size: 60px; color: #747d8c; text-shadow: 4px 4px 0 #000; animation: drop-down 0.5s forwards; }
+        .sys-treasure, .sys-treasure-open { font-size: 50px; text-align: center; color: white; animation: float-up 1s forwards; }
+        .sys-treasure { animation: wobble 1s infinite; }
+        .sys-rankup { font-size: 70px; color: #fd79a8; text-shadow: 0 0 20px #fd79a8; animation: scale-up-fade 2s forwards; }
+
+        @keyframes pop-in { 0% { transform: scale(3); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes blast-out { 0% { transform: scale(0.5); opacity: 1; } 20% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        @keyframes count-ping { 0% { transform: scale(2); opacity: 0; } 20% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.5); opacity: 0; } }
+        @keyframes slide-in-bounce { 0% { transform: translateX(-100vw) skewX(-20deg); } 60% { transform: translateX(20px) skewX(0); } 100% { transform: translateX(0); } }
+        @keyframes perfect-shine { 0% { filter: brightness(1) drop-shadow(0 0 0 #feca57); transform: scale(0.8); } 50% { filter: brightness(2) drop-shadow(0 0 50px #feca57); transform: scale(1.1); } 100% { filter: brightness(1); transform: scale(1); opacity: 0; } }
+
+        /* 幕開け演出 */
+        .sys-curtain-left, .sys-curtain-right { position: absolute; top: 0; width: 50vw; height: 100vh; background: #000; z-index: 1999; }
+        .sys-curtain-left { left: 0; animation: curtain-l 1.2s ease-in-out forwards; }
+        .sys-curtain-right { right: 0; animation: curtain-r 1.2s ease-in-out forwards; }
+        @keyframes curtain-l { 0%, 20% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        @keyframes curtain-r { 0%, 20% { transform: translateX(0); } 100% { transform: translateX(100%); } }
+
+        /* 4-2. タイムアップ警告（ビネット） */
+        .vignette-pulse { box-shadow: inset 0 0 100px 20px rgba(255, 0, 0, 0); animation: vig-pulse 2s infinite; }
+        .vignette-pulse-fast { box-shadow: inset 0 0 150px 40px rgba(255, 0, 0, 0); animation: vig-pulse 0.5s infinite; }
+        @keyframes vig-pulse { 0%, 100% { box-shadow: inset 0 0 50px 0px rgba(255, 0, 0, 0); } 50% { box-shadow: inset 0 0 150px 30px rgba(235, 77, 75, 0.8); } }
+
+        /* 4-5. 背景環境 */
+        .bg-cyber { background: linear-gradient(transparent 95%, rgba(0, 210, 211, 0.3) 100%), linear-gradient(90deg, transparent 95%, rgba(0, 210, 211, 0.3) 100%); background-size: 40px 40px; animation: bg-scroll 2s linear infinite; }
+        @keyframes bg-scroll { from { background-position: 0 0; } to { background-position: 40px 40px; } }
+        
+        .bg-danger { background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #eb4d4b 150%); animation: bg-breathe 2s infinite alternate; }
+        @keyframes bg-breathe { from { opacity: 0.5; } to { opacity: 1; } }
+
+        .bg-magic { background-image: radial-gradient(rgba(255, 255, 255, 0.1) 2px, transparent 2px); background-size: 30px 30px; animation: magic-float 10s linear infinite; }
+        @keyframes magic-float { from { background-position: 0 0; } to { background-position: 100px -100px; } }
       `}</style>
     </div>
   );
