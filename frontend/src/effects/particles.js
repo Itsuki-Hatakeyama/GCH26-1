@@ -84,13 +84,15 @@ class ParticleSystem {
     requestAnimationFrame(() => this.loop());
     if (!this.ctx) return;
 
-    // 🌟 軌跡（しっぽ）を残すための特殊なクリア方法
-    this.ctx.globalCompositeOperation = 'source-over';
-    this.ctx.fillStyle = 'rgba(10, 14, 23, 0.3)'; // 背景色に合わせて半透明で塗りつぶす
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // ❌ 修正前
+    // this.ctx.globalCompositeOperation = 'source-over';
+    // this.ctx.fillStyle = 'rgba(10, 14, 23, 0.3)';
+    // this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // ⭕ 修正後
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // 🌟 加算合成（重なった部分が白く飛ぶ）
-    this.ctx.globalCompositeOperation = 'lighter';
+    this.ctx.globalCompositeOperation = 'lighter'; // 加算合成で光らせる
     
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
