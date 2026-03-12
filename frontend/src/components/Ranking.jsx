@@ -4,10 +4,13 @@ export default function Ranking({ onBack, currentUser }) {
   const [rankingData, setRankingData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ★ モーダル（小窓）用の状態管理
-  const [selectedUser, setSelectedUser] = useState(null); // クリックされたユーザーID
+  // モーダル用の状態管理
+  const [selectedUser, setSelectedUser] = useState(null);
   const [modalProfileData, setModalProfileData] = useState({ study_minutes: 0, bomb_count: 0 });
   const [isModalLoading, setIsModalLoading] = useState(false);
+  
+  // フレンド申請の状態管理（未送信 / 送信中 / 送信済）
+  const [requestStatus, setRequestStatus] = useState('idle'); 
 
   const API_BASE = "http://127.0.0.1:5000";
   const accentColor = '#38bdf8';
@@ -29,7 +32,6 @@ export default function Ranking({ onBack, currentUser }) {
         if (response.ok) {
           const data = await response.json();
           const fetchedData = data.ranking || data;
-          
           if (fetchedData && fetchedData.length > 0) {
             setRankingData(fetchedData);
           } else {
@@ -45,18 +47,16 @@ export default function Ranking({ onBack, currentUser }) {
         setIsLoading(false);
       }
     };
-
     fetchRanking();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ★ ユーザー名がクリックされたときの処理
   const handleUserClick = async (userId) => {
-    setSelectedUser(userId); // モーダルを開く
+    setSelectedUser(userId);
     setIsModalLoading(true);
+    setRequestStatus('idle'); // モーダルを開くたびに申請状態をリセット
 
     try {
-      // クリックしたユーザーのIDでAPIを叩く
       const response = await fetch(`${API_BASE}/api/user/profile?user_id=${userId}`);
       if (response.ok) {
         const data = await response.json();
@@ -68,27 +68,29 @@ export default function Ranking({ onBack, currentUser }) {
         loadModalDummyData(userId);
       }
     } catch (error) {
-      console.error("プロフィール取得エラー:", error);
       loadModalDummyData(userId);
     } finally {
       setIsModalLoading(false);
     }
   };
 
-  // ★ モーダル用のダミーデータ（APIがない時用）
   const loadModalDummyData = (userId) => {
-    // ユーザーによって適当に違う数字を出す小技
     const randomTime = Math.floor(Math.random() * 500) + 50; 
     const randomBomb = Math.floor(Math.random() * 10) + 1;
-    setModalProfileData({
-      study_minutes: randomTime,
-      bomb_count: randomBomb
-    });
+    setModalProfileData({ study_minutes: randomTime, bomb_count: randomBomb });
   };
 
-  // ★ モーダルを閉じる処理
   const closeModal = () => {
     setSelectedUser(null);
+  };
+
+  // フレンド申請ボタンを押した時のダミー処理
+  const handleSendRequest = () => {
+    setRequestStatus('sending'); // 「通信中」にする
+    // 1秒後に「送信完了」にする
+    setTimeout(() => {
+      setRequestStatus('sent');
+    }, 1000);
   };
 
   return (
@@ -101,10 +103,8 @@ export default function Ranking({ onBack, currentUser }) {
       position: 'relative'
     }}>
       
-      {/* 戻るボタン */}
       <button className="btn-back" onClick={onBack}>← HOME</button>
 
-      {/* ヘッダー部分 */}
       <div style={{ textAlign: 'center', marginBottom: '40px', marginTop: '20px' }}>
         <h1 style={{ 
           fontSize: '3.5rem', 
@@ -121,7 +121,6 @@ export default function Ranking({ onBack, currentUser }) {
         </p>
       </div>
 
-      {/* ランキングボード */}
       <div className="ranking-board">
         <div className="ranking-header">
           <div className="col-rank">RANK</div>
@@ -148,8 +147,6 @@ export default function Ranking({ onBack, currentUser }) {
                   <div className="col-rank" style={{ color: rankColor, textShadow: rankShadow, fontSize: '1.2rem', fontWeight: 'bold' }}>
                     {player.rank < 10 ? `0${player.rank}` : player.rank}
                   </div>
-                  
-                  {/* ★ 名前部分を clickable に変更！ */}
                   <div 
                     className="col-name name-clickable" 
                     onClick={() => handleUserClick(player.user_id)}
@@ -157,7 +154,6 @@ export default function Ranking({ onBack, currentUser }) {
                   >
                     {player.user_id} {isMe && <span style={{ fontSize: '0.8rem', marginLeft: '10px' }}>[YOU]</span>}
                   </div>
-                  
                   <div className="col-score" style={{ color: isMe ? '#020617' : accentColor, fontWeight: 'bold' }}>
                     {player.score.toLocaleString()}
                   </div>
@@ -168,10 +164,9 @@ export default function Ranking({ onBack, currentUser }) {
         )}
       </div>
 
-      {/* ★ ここから：プロフィールを表示する小窓（モーダル） */}
+      {/* モーダル（小窓） */}
       {selectedUser && (
         <div className="modal-overlay" onClick={closeModal}>
-          {/* 中身をクリックしても閉じないように e.stopPropagation() を入れる */}
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="btn-modal-close" onClick={closeModal}>[ X ]</button>
             
@@ -196,6 +191,21 @@ export default function Ranking({ onBack, currentUser }) {
                   <span className="stat-label">BOMB_STOCK</span>
                   <span className="stat-value" style={{ color: '#ff4757' }}>{modalProfileData.bomb_count} <span style={{fontSize:'0.8rem'}}>UNITS</span></span>
                 </div>
+
+                {/* ★ 変更：ボタンのテキストを「ADD FRIEND」に変更しました */}
+                {selectedUser !== currentUser?.id && (
+                  <div style={{ marginTop: '10px' }}>
+                    <button 
+                      className={`btn-friend-request ${requestStatus === 'sent' ? 'sent' : ''}`}
+                      onClick={handleSendRequest}
+                      disabled={requestStatus === 'sending' || requestStatus === 'sent'}
+                    >
+                      {requestStatus === 'idle' && '[ + ADD FRIEND ]'}
+                      {requestStatus === 'sending' && '[ SENDING REQUEST... ]'}
+                      {requestStatus === 'sent' && '[ REQUEST SENT ✓ ]'}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -204,7 +214,6 @@ export default function Ranking({ onBack, currentUser }) {
 
       {/* --- CSS設定 --- */}
       <style>{`
-        /* ...既存のCSSはそのまま維持... */
         .btn-back {
           position: absolute;
           top: 30px;
@@ -282,7 +291,6 @@ export default function Ranking({ onBack, currentUser }) {
         .col-name { width: 55%; text-align: left; padding-left: 20px; }
         .col-score { width: 30%; text-align: right; font-size: 1.2rem; }
 
-        /* ★ 追加：クリックできる名前のホバー演出 */
         .name-clickable {
           cursor: pointer;
           transition: color 0.2s, text-shadow 0.2s;
@@ -293,19 +301,18 @@ export default function Ranking({ onBack, currentUser }) {
           text-decoration: underline;
         }
 
-        /* ★ 追加：モーダル（小窓）のCSS */
         .modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
           width: 100vw;
           height: 100vh;
-          background: rgba(2, 6, 23, 0.8); /* 暗い背景 */
+          background: rgba(2, 6, 23, 0.8);
           backdrop-filter: blur(5px);
           display: flex;
           justify-content: center;
           align-items: center;
-          z-index: 1000; /* 一番手前に表示 */
+          z-index: 1000;
         }
 
         .modal-content {
@@ -357,6 +364,33 @@ export default function Ranking({ onBack, currentUser }) {
         .stat-value {
           font-size: 1.2rem;
           font-weight: bold;
+        }
+
+        .btn-friend-request {
+          width: 100%;
+          background: transparent;
+          color: #2ed573;
+          border: 1px solid #2ed573;
+          padding: 12px;
+          font-family: 'Courier New', monospace;
+          font-size: 14px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s;
+          letter-spacing: 0.05em;
+          border-radius: 4px;
+        }
+        .btn-friend-request:hover:not(:disabled) {
+          background: rgba(46, 213, 115, 0.1);
+          box-shadow: 0 0 15px rgba(46, 213, 115, 0.4);
+        }
+        .btn-friend-request:disabled {
+          cursor: default;
+        }
+        .btn-friend-request.sent {
+          color: #a4b0be;
+          border-color: #a4b0be;
+          background: rgba(255, 255, 255, 0.05);
         }
       `}</style>
     </div>

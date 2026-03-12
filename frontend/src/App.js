@@ -7,16 +7,16 @@ import Timer from './components/Timer';
 import Ranking from './components/Ranking';
 import PuzzleBoard from './components/PuzzleBoard';
 import Profile from './components/Profile';
+import Friends from './components/Friend'; // ★ 追加：Friendsを読み込む
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [view, setView] = useState('home');
 
-  // ★追加：ログアウト処理
   const handleLogout = () => {
     if (window.confirm("ログアウトしますか？")) {
       setCurrentUser(null);
-      setView('home'); // 次回ログイン時にホームから始まるようにリセット
+      setView('home'); 
     }
   };
 
@@ -31,26 +31,22 @@ function App() {
     );
   }
 
-  // ① ホーム画面
   if (view === 'home') {
     return (
       <div>
-        {/* ★ここにあったID表示の代わりに、Homeの中でログアウトボタンと一緒に表示させるのが綺麗です */}
         <Home 
           onNavigate={setView} 
-          currentUser={currentUser} // ID表示用に渡す
-          onLogout={handleLogout}    // ★ログアウト関数を渡す
+          currentUser={currentUser}
+          onLogout={handleLogout}  
         />
       </div>
     );
   }
 
-  // ② タイマー画面
   if (view === 'timer') {
     return <Timer onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ③ ランキング画面
   if (view === 'ranking') {
     return <Ranking onBack={() => setView('home')} currentUser={currentUser} />;
   }
@@ -60,10 +56,14 @@ function App() {
     return <PuzzleBoard onBack={() => setView('home')} userId={currentUser.id} />;
   }
 
-  // ⑤ プロフィール画面を追加
   if (view === 'profile') {
     return <Profile onBack={() => setView('home')} currentUser={currentUser} />;
   } 
+
+  // ★ 追加：⑥ フレンド（ネットワーク）画面
+  if (view === 'friends') {
+    return <Friends onBack={() => setView('home')} currentUser={currentUser} />;
+  }
 
   return null;
 }
