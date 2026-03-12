@@ -153,7 +153,7 @@ export default function PuzzleBoard({ onBack, userId }) {
   if (board.length === 0) return null;
 
   return (
-    <div className="puzzle-screen" style={styles.screenContainer}>
+    <div className="puzzle-screen game-container" style={styles.screenContainer}>
       
       <div onClick={onBack} style={styles.backButton}>← HOME</div>
 
@@ -180,7 +180,7 @@ export default function PuzzleBoard({ onBack, userId }) {
               return (
                 <div
                   key={block.id} 
-                  onClick={() => handleBlockClick(x, y)}
+                  onClick={(e) => handleBlockClick(e, x, y)}
                   onMouseEnter={() => isBombMode && setHoveredBlock({ x, y })}
                   onMouseLeave={() => isBombMode && setHoveredBlock({ x: -1, y: -1 })}
                   style={{
