@@ -17,7 +17,7 @@ export default function PuzzleBoard({ onBack, userId }) {
   const [isBombMode, setIsBombMode] = useState(false);
 
   const [isGameStarted, setIsGameStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); 
+  const [timeLeft, setTimeLeft] = useState(60); 
   const [isGameOver, setIsGameOver] = useState(false);
   const [hoveredBlock, setHoveredBlock] = useState({ x: -1, y: -1 });
 

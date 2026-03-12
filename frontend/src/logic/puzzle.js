@@ -48,8 +48,8 @@ export function removeBlocks(board, startX, startY) {
 
   dfs(startX, startY);
 
-  // 2個以上繋がっていれば消す
-  if (connectedBlocks.length >= 2) {
+  // 🌟 変更点：3個以上繋がっていれば消す！
+  if (connectedBlocks.length >= 3) {
     const newBoard = board.map(row => [...row]);
     connectedBlocks.forEach(block => {
       newBoard[block.y][block.x] = 0;
@@ -94,7 +94,8 @@ export function dropBlocks(board) {
  * まとめて消すほど点数が跳ね上がる（2乗）仕組みです！
  */
 export function calculateScore(removedCount) {
-  if (removedCount < 2) return 0;
+  // 🌟 変更点：3個未満しか消えていない場合はスコアを0にする！
+  if (removedCount < 3) return 0;
   return removedCount * removedCount * 10;
 }
 
