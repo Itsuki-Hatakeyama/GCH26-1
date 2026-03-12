@@ -1,11 +1,13 @@
-import anime from 'animejs';
+// src/effects/animations.js
+// 🌟 'anime' ではなく 'animate' をインポートする
+import { animate } from 'animejs';
 
 export const shakeScreen = (isBomb = false) => {
-  // ボムの時は激しく、通常の時は軽く揺らす
   const intensity = isBomb ? 15 : 4;
   
-  anime({
-    targets: '.game-container', // 後でPuzzleBoardの親divにこのクラスを付けます
+  // 🌟 関数名も animate に変更
+  animate({
+    targets: '.game-container',
     translateX: [
       { value: -intensity, duration: 40 },
       { value: intensity, duration: 40 },
