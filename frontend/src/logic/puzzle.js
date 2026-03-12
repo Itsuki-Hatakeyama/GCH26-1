@@ -1,31 +1,29 @@
-// GCH26-1/logic/puzzle.js
+// src/logic/puzzle.js
 
 export const ROWS = 8;
 export const COLS = 8;
-export const COLORS = [1, 2, 3, 4]; // 1:赤, 2:青, 3:緑, 4:黄 (0は計算用の空マス)
+export const COLORS = [1, 2, 3, 4]; // 1:赤, 2:青, 3:緑, 4:黄
 
-/**
- * 1. 盤面の初期化
- * 8x8のランダムな数字の2次元配列を生成します。
- */
+// 🌟 ブロックに名前(ID)をつけるための関数
+const generateId = () => Math.random().toString(36).substring(2, 9);
+
 export function createBoard() {
   const board = [];
   for (let y = 0; y < ROWS; y++) {
     const row = [];
     for (let x = 0; x < COLS; x++) {
-      row.push(Math.floor(Math.random() * COLORS.length) + 1);
+      row.push({
+        id: generateId(),
+        color: Math.floor(Math.random() * COLORS.length) + 1
+      });
     }
     board.push(row);
   }
   return board;
 }
 
-/**
- * 2. 消去判定（Flood Fill / DFS）
- * クリックされた(x, y)から同色ブロックを探索し、0（空）にします。
- */
 export function removeBlocks(board, startX, startY) {
-  const targetColor = board[startY][startX];
+  const targetColor = board[startY][startX].color;
   
   if (targetColor === 0) return { newBoard: board, removedCount: 0 };
 
@@ -35,7 +33,7 @@ export function removeBlocks(board, startX, startY) {
   function dfs(x, y) {
     if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return;
     if (visited[y][x]) return;
-    if (board[y][x] !== targetColor) return;
+    if (board[y][x].color !== targetColor) return; // 色を判定
 
     visited[y][x] = true;
     connectedBlocks.push({ x, y });
@@ -48,11 +46,11 @@ export function removeBlocks(board, startX, startY) {
 
   dfs(startX, startY);
 
-  // 🌟 変更点：3個以上繋がっていれば消す！
   if (connectedBlocks.length >= 3) {
     const newBoard = board.map(row => [...row]);
     connectedBlocks.forEach(block => {
-      newBoard[block.y][block.x] = 0;
+      // 🌟 IDは残したまま、色だけ0(透明)にする！
+      newBoard[block.y][block.x] = { ...newBoard[block.y][block.x], color: 0 };
     });
     return { newBoard, removedCount: connectedBlocks.length };
   }
@@ -60,27 +58,28 @@ export function removeBlocks(board, startX, startY) {
   return { newBoard: board, removedCount: 0 };
 }
 
-/**
- * 3. 重力（落下）と新しいブロックの補充
- * 0（空）になった部分に上のブロックを落とし、一番上には新しいブロックを生成します。
- */
 export function dropBlocks(board) {
   const newBoard = board.map(row => [...row]);
 
   for (let x = 0; x < COLS; x++) {
     let columnBlocks = [];
     
+    // 空じゃないブロックを収集
     for (let y = ROWS - 1; y >= 0; y--) {
-      if (newBoard[y][x] !== 0) {
+      if (newBoard[y][x].color !== 0) {
         columnBlocks.push(newBoard[y][x]);
       }
     }
 
+    // 下から詰めて、足りない分は新しいIDでブロック生成
     for (let y = ROWS - 1; y >= 0; y--) {
       if (columnBlocks.length > 0) {
         newBoard[y][x] = columnBlocks.shift();
       } else {
-        newBoard[y][x] = Math.floor(Math.random() * COLORS.length) + 1;
+        newBoard[y][x] = {
+          id: generateId(),
+          color: Math.floor(Math.random() * COLORS.length) + 1
+        };
       }
     }
   }
@@ -88,21 +87,11 @@ export function dropBlocks(board) {
   return newBoard;
 }
 
-/**
- * 4. スコア計算
- * 消した数（removedCount）をもとに獲得スコアを計算します。
- * まとめて消すほど点数が跳ね上がる（2乗）仕組みです！
- */
 export function calculateScore(removedCount) {
-  // 🌟 変更点：3個未満しか消えていない場合はスコアを0にする！
   if (removedCount < 3) return 0;
   return removedCount * removedCount * 10;
 }
 
-/**
- * 5. チートアイテム：ボム（爆弾）
- * 指定された中心座標(centerX, centerY)の周囲3×3マスを問答無用で0(空)にします。
- */
 export function activateBomb(board, centerX, centerY) {
   const newBoard = board.map(row => [...row]);
   let removedCount = 0;
@@ -110,8 +99,9 @@ export function activateBomb(board, centerX, centerY) {
   for (let y = centerY - 1; y <= centerY + 1; y++) {
     for (let x = centerX - 1; x <= centerX + 1; x++) {
       if (x >= 0 && x < COLS && y >= 0 && y < ROWS) {
-        if (newBoard[y][x] !== 0) {
-          newBoard[y][x] = 0;
+        if (newBoard[y][x].color !== 0) {
+          // 🌟 ここでもIDは残す
+          newBoard[y][x] = { ...newBoard[y][x], color: 0 };
           removedCount++;
         }
       }
