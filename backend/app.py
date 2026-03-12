@@ -186,5 +186,32 @@ def get_ranking():
         "ranking": ranking_list
     })
 
+# ⑤ プロフィール取得API（DB参照）
+@app.route('/api/user/profile', methods=['GET'])
+def get_profile():
+    # GETリクエストのURL（?user_id=...）からIDを取得
+    user_id = request.args.get('user_id')
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_idは必須です"}), 400
+
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # ユーザーの累計勉強時間とボムの数を取得
+    c.execute('SELECT study_minutes, bomb_count FROM users WHERE id = ?', (user_id,))
+    user = c.fetchone()
+    conn.close()
+
+    if user:
+        return jsonify({
+            "status": "success",
+            "user_id": user_id,
+            "study_minutes": user['study_minutes'],
+            "bomb_count": user['bomb_count']
+        })
+    else:
+        return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
