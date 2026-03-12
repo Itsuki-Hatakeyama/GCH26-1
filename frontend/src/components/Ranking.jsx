@@ -7,15 +7,32 @@ export default function Ranking({ onBack, currentUser }) {
   const API_BASE = "http://127.0.0.1:5000";
   const accentColor = '#38bdf8';
 
+  // ★ useEffectより上に移動して、確実に読み込まれるようにしました
+  const loadDummyData = () => {
+    setRankingData([
+      { rank: 1, user_id: 'cyber_ninja', score: 99999 },
+      { rank: 2, user_id: 'neon_rider', score: 85000 },
+      { rank: 3, user_id: currentUser?.id || 'test_user', score: 72000 },
+      { rank: 4, user_id: 'hacker_01', score: 65000 },
+      { rank: 5, user_id: 'guest_99', score: 50000 },
+    ]);
+  };
+
   useEffect(() => {
     const fetchRanking = async () => {
       try {
-        // ★ いただいたエンドポイント仕様に修正
         const response = await fetch(`${API_BASE}/api/game/ranking`);
         if (response.ok) {
           const data = await response.json();
-          // APIからのレスポンス形式に合わせてセット（配列が直接返ってくるか、キーに入っているか）
-          setRankingData(data.ranking || data);
+          const fetchedData = data.ranking || data;
+          
+          // ★ 修正ポイント：通信成功してもデータが0件だったらダミーを表示する
+          if (fetchedData && fetchedData.length > 0) {
+            setRankingData(fetchedData);
+          } else {
+            console.log("データが空のため、ダミーデータを表示します");
+            loadDummyData();
+          }
         } else {
           loadDummyData();
         }
@@ -28,18 +45,8 @@ export default function Ranking({ onBack, currentUser }) {
     };
 
     fetchRanking();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // API未実装/エラー確認用のダミーデータ（DBの「score」に変数名を合わせました）
-  const loadDummyData = () => {
-    setRankingData([
-      { rank: 1, user_id: 'cyber_ninja', score: 99999 },
-      { rank: 2, user_id: 'neon_rider', score: 85000 },
-      { rank: 3, user_id: currentUser?.id || 'test_user', score: 72000 },
-      { rank: 4, user_id: 'hacker_01', score: 65000 },
-      { rank: 5, user_id: 'guest_99', score: 50000 },
-    ]);
-  };
 
   return (
     <div className="container theme-home" style={{
@@ -89,9 +96,7 @@ export default function Ranking({ onBack, currentUser }) {
           /* ランキングリスト */
           <div className="ranking-list">
             {rankingData.map((player, index) => {
-              // 自分の順位かどうかを判定
               const isMe = player.user_id === currentUser?.id;
-              // 上位3位までの色分け
               let rankColor = 'white';
               let rankShadow = 'none';
               if (player.rank === 1) { rankColor = '#ffd700'; rankShadow = '0 0 10px rgba(255,215,0,0.5)'; }
@@ -107,7 +112,6 @@ export default function Ranking({ onBack, currentUser }) {
                     {player.user_id} {isMe && <span style={{ fontSize: '0.8rem', marginLeft: '10px' }}>[YOU]</span>}
                   </div>
                   <div className="col-score" style={{ color: isMe ? '#020617' : accentColor, fontWeight: 'bold' }}>
-                    {/* ★ DBの「score」プロパティを参照するように修正 */}
                     {player.score.toLocaleString()}
                   </div>
                 </div>
