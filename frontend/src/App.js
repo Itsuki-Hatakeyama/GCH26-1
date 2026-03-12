@@ -55,9 +55,9 @@ function App() {
     return <Ranking onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ④ ゲーム画面
+  // ④ ゲーム画面（🌟 ここを userId={currentUser.id} に修正しました！）
   if (view === 'game') {
-    return <PuzzleBoard onBack={() => setView('home')} currentUser={currentUser} />;
+    return <PuzzleBoard onBack={() => setView('home')} userId={currentUser.id} />;
   }
 
   // ⑤ プロフィール画面を追加
