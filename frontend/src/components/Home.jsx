@@ -15,6 +15,12 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
       overflow: 'hidden'
     }}>
       
+      {/* ★ 左上のプロフィールボタン */}
+      <button className="btn-profile" onClick={() => onNavigate('profile')}>
+        <span style={{ fontSize: '0.8em', marginRight: '5px' }}>ID:</span>
+        {currentUser?.id || "GUEST"}
+      </button>
+      
       {/* --- 右上のシステム操作エリア --- */}
       <div style={{
         position: 'absolute',
@@ -76,6 +82,31 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
 
       {/* --- CSS設定 --- */}
       <style>{`
+        /* ★ プロフィールボタンのデザイン */
+        .btn-profile {
+          position: absolute;
+          top: 30px;
+          left: 40px;
+          background: rgba(15, 23, 42, 0.5);
+          color: ${accentColor};
+          border: 1px solid rgba(56, 189, 248, 0.3);
+          border-radius: 4px;
+          font-family: 'Courier New', monospace;
+          font-size: 18px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          padding: 10px 20px;
+          letter-spacing: 0.1em;
+          backdrop-filter: blur(5px);
+        }
+        .btn-profile:hover {
+          background: rgba(56, 189, 248, 0.1);
+          color: white;
+          box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
+          border-color: ${accentColor};
+        }
+
         .btn-logout {
           background: transparent;
           color: rgba(255, 255, 255, 0.4);
