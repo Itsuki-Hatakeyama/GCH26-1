@@ -80,7 +80,7 @@ export default function Friends({ onBack, currentUser }) {
           letterSpacing: '0.2em',
           margin: '0 0 10px 0'
         }}>
-          NETWORK
+          FRIEND
         </h1>
         <p style={{ color: accentColor, letterSpacing: '0.4em', fontFamily: 'monospace', margin: 0 }}>
           {">> CONNECTION ESTABLISHED"}
@@ -93,7 +93,7 @@ export default function Friends({ onBack, currentUser }) {
           className={`tab-btn ${activeTab === 'network' ? 'active' : ''}`}
           onClick={() => setActiveTab('network')}
         >
-          MY NETWORK ({friendsData.length})
+          MY FRIEND ({friendsData.length})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
