@@ -6,7 +6,6 @@ import {
   dropBlocks,
   calculateScore,
   activateBomb,
-  ROWS,
   COLS
 } from '../logic/puzzle';
 
