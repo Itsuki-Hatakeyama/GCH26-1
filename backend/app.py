@@ -213,5 +213,103 @@ def get_profile():
     else:
         return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
 
+# ⑧ フレンド申請API (POST)
+@app.route('/api/friends/request', methods=['POST'])
+def request_friend():
+    data = request.get_json()
+    user_id = data.get('user_id')       # 自分
+    friend_id = data.get('friend_id')   # 申請したい相手
+
+    if not user_id or not friend_id:
+        return jsonify({"status": "error", "message": "user_idとfriend_idは必須です"}), 400
+    if user_id == friend_id:
+        return jsonify({"status": "error", "message": "自分自身には申請できません"}), 400
+
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # 相手が存在するかチェック
+    c.execute('SELECT id FROM users WHERE id = ?', (friend_id,))
+    if not c.fetchone():
+        conn.close()
+        return jsonify({"status": "error", "message": "そのIDのユーザーは存在しません"}), 404
+
+    try:
+        # 申請レコードを作成（statusはデフォルトで'pending'になります）
+        c.execute('INSERT INTO friends (user_id, friend_id, status) VALUES (?, ?, "pending")', (user_id, friend_id))
+        conn.commit()
+        return jsonify({"status": "success", "message": f"{friend_id}にフレンド申請を送りました！"}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({"status": "error", "message": "すでに申請済み、またはフレンドです"}), 409
+    finally:
+        conn.close()
+
+# ⑨ フレンド承認API (POST)
+@app.route('/api/friends/accept', methods=['POST'])
+def accept_friend():
+    data = request.get_json()
+    user_id = data.get('user_id')       # 自分（申請を受けた側）
+    friend_id = data.get('friend_id')   # 相手（申請を送ってきた側）
+
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # 相手からの 'pending' な申請を 'accepted' に更新する
+    c.execute('''
+        UPDATE friends 
+        SET status = 'accepted' 
+        WHERE user_id = ? AND friend_id = ? AND status = 'pending'
+    ''', (friend_id, user_id)) # 申請元(user_id列)が相手、申請先(friend_id列)が自分
+
+    if c.rowcount == 0:
+        conn.close()
+        return jsonify({"status": "error", "message": "承認できる申請が見つかりません"}), 404
+
+    # ★超重要：双方向からフレンド一覧を取りやすくするため、逆向きのレコードも 'accepted' で作っておく
+    try:
+        c.execute('INSERT OR IGNORE INTO friends (user_id, friend_id, status) VALUES (?, ?, "accepted")', (user_id, friend_id))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass
+    
+    conn.close()
+    return jsonify({"status": "success", "message": f"{friend_id}の申請を承認しました！"})
+
+# ⑩ フレンド＆申請一覧取得API (GET)
+@app.route('/api/friends/list', methods=['GET'])
+def get_friends():
+    user_id = request.args.get('user_id')
+    
+    conn = get_db_connection()
+    c = conn.cursor()
+    
+    # 1. 承認済みのフレンド一覧を取得
+    c.execute('''
+        SELECT f.friend_id, u.study_minutes 
+        FROM friends f
+        JOIN users u ON f.friend_id = u.id
+        WHERE f.user_id = ? AND f.status = 'accepted'
+    ''', (user_id,))
+    accepted_friends = [{"friend_id": row["friend_id"], "study_minutes": row["study_minutes"]} for row in c.fetchall()]
+    
+    # 2. 自分宛てに来ている「承認待ち」の申請一覧を取得
+    c.execute('''
+        SELECT f.user_id as requester_id, u.study_minutes 
+        FROM friends f
+        JOIN users u ON f.user_id = u.id
+        WHERE f.friend_id = ? AND f.status = 'pending'
+    ''', (user_id,))
+    pending_requests = [{"requester_id": row["requester_id"], "study_minutes": row["study_minutes"]} for row in c.fetchall()]
+    
+    conn.close()
+
+    # 1回のAPI通信で、両方のリストをフロントに返してあげる（通信節約！）
+    return jsonify({
+        "status": "success",
+        "user_id": user_id,
+        "friends": accepted_friends,
+        "pending_requests": pending_requests
+    })
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

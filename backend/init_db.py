@@ -32,6 +32,18 @@ def init_db():
         )
     ''')
 
+    # friends テーブルの作成（申請・承認ステータス付き）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS friends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,      -- 申請を送った人
+            friend_id TEXT,    -- 申請を受け取る人
+            status TEXT DEFAULT 'pending', -- 'pending'(申請中) または 'accepted'(承認済み)
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, friend_id)
+        )
+    ''')
+
     # 開発テスト用に、初期ユーザーを1人登録しておく（パスワードはハッシュ化して保存）
     test_password = generate_password_hash("password123")
     c.execute('INSERT OR IGNORE INTO users (id, password, study_minutes, bomb_count) VALUES (?, ?, 0, 0)', ("user_123", test_password))
