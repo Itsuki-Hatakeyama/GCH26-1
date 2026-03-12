@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 
 export default function Timer({ onBack, currentUser }) {
   // ★ テスト用時間（本番は 25 * 60 などに戻してください）
-  const FOCUS_TIME = 5; 
-  const BREAK_TIME = 5;
+  const FOCUS_TIME = 25 * 60; 
+  const BREAK_TIME = 5 * 60;
 
   const [isBreak, setIsBreak] = useState(false);
   const [timeLeft, setTimeLeft] = useState(FOCUS_TIME);
