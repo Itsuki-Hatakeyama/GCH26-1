@@ -11,6 +11,12 @@ import {
   COLS
 } from '../logic/puzzle';
 
+// 【ここから追加】エフェクトの読み込み 
+import { particleEngine } from '../effects/particles';
+import { shakeScreen } from '../effects/animations';
+import { playSound } from '../effects/audio';
+// 【ここまで追加】 
+
 export default function PuzzleBoard({ onBack, userId }) {
   const [board, setBoard] = useState([]);
   const [score, setScore] = useState(0);
@@ -26,6 +32,7 @@ export default function PuzzleBoard({ onBack, userId }) {
   const API_BASE = "http://127.0.0.1:5000";
 
   useEffect(() => {
+    particleEngine.init();
     setBoard(createBoard());
 
     const fetchInventory = async () => {
