@@ -10,27 +10,54 @@ import {
   COLS
 } from '../logic/puzzle';
 
-// 🌟 App.jsから「ホームに戻る関数(onBack)」を受け取る
-export default function PuzzleBoard({ onBack }) {
+// 🌟 App.jsから「ホームに戻る関数(onBack)」と「ログイン中のユーザーID(userId)」を受け取る！
+export default function PuzzleBoard({ onBack, userId }) {
   // --- 状態（State）の管理 ---
   const [board, setBoard] = useState([]);
   const [score, setScore] = useState(0);
   
-  // ボムの所持数（本番はApp.jsから受け取るのが理想）
-  const [bombCount, setBombCount] = useState(3); 
+  // 🌟 APIから取得するまで一旦0にしておく
+  const [bombCount, setBombCount] = useState(0); 
   const [isBombMode, setIsBombMode] = useState(false);
 
   // ⏱ 2分間(120秒)のスコアアタック用タイマー
   const [timeLeft, setTimeLeft] = useState(120); 
   const [isGameOver, setIsGameOver] = useState(false);
 
-  // 🌟 ボム使用時のホバー範囲を可視化するためのState
+  // ボム使用時のホバー範囲を可視化するためのState
   const [hoveredBlock, setHoveredBlock] = useState({ x: -1, y: -1 });
 
-  // 画面が開いた瞬間に、初期盤面を生成する
+  // 🌟 画面が開いた瞬間の処理（初期盤面生成 ＆ ボム所持数の取得）
   useEffect(() => {
     setBoard(createBoard());
-  }, []);
+
+    // 🚀 大翔さんのAPI④: アイテム所持数の確認
+    const fetchInventory = async () => {
+      // ユーザーIDがない（未ログイン）場合はスキップ
+      if (!userId) return; 
+
+      try {
+        const response = await fetch(`http://localhost:5000/api/user/inventory?user_id=${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          // ※バックエンドのレスポンス名に合わせて変更してください（例: data.bombs など）
+          // 今回は仮で data.bomb_count としています
+          if (data.bomb_count !== undefined) {
+            setBombCount(data.bomb_count);
+            console.log(`💣 ボム所持数を取得しました: ${data.bomb_count}個`);
+          }
+        } else {
+          console.error('⚠️ ボム所持数の取得に失敗しました:', response.status);
+        }
+      } catch (error) {
+        console.error('🔌 バックエンドと通信できませんでした:', error);
+        // 通信エラー時は、テスト用に3個付与しておく（本番では消してOK）
+        setBombCount(3); 
+      }
+    };
+
+    fetchInventory();
+  }, [userId]);
 
   // ⏱ タイマーのカウントダウン ＆ ゲーム終了時のスコア送信処理
   useEffect(() => {
@@ -40,22 +67,30 @@ export default function PuzzleBoard({ onBack }) {
     } else if (timeLeft === 0 && !isGameOver) {
       setIsGameOver(true);
       
-      // 🚀 大翔さんのバックエンドへスコアを送信！
+      // 🚀 大翔さんのAPI⑤: スコア送信
       const sendScoreToBackend = async () => {
+        if (!userId) {
+          console.log("⚠️ ゲストプレイのためスコアは送信されません");
+          return;
+        }
+
         try {
-          // ※URLは大翔さんの環境に合わせて変更してください（例: 5000や8000）
-          const response = await fetch('http://localhost:5000/api/score', {
+          const response = await fetch('http://localhost:5000/api/game/score', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ score: score }),
+            // 🌟 APIの仕様書通り、user_id と score を送信！
+            body: JSON.stringify({ 
+              user_id: userId, 
+              score: score 
+            }),
           });
 
           if (response.ok) {
-            console.log(`🔥 スコア ${score} の送信に成功しました！`);
+            console.log(`🔥 ユーザー[${userId}]のスコア ${score} の送信に成功しました！`);
           } else {
-            console.error('⚠️ バックエンドがエラーを返しました:', response.status);
+            console.error('⚠️ スコア送信エラー:', response.status);
           }
         } catch (error) {
           console.error('🔌 バックエンドと通信できませんでした:', error);
@@ -64,7 +99,7 @@ export default function PuzzleBoard({ onBack }) {
 
       sendScoreToBackend();
     }
-  }, [timeLeft, isGameOver, score]);
+  }, [timeLeft, isGameOver, score, userId]);
 
   // ⏱ 時間を MM:SS 形式 (例: 2:00) に変換する関数
   const formatTime = (seconds) => {
@@ -75,10 +110,7 @@ export default function PuzzleBoard({ onBack }) {
 
   // --- クリックされた時の処理 ---
   const handleBlockClick = (x, y) => {
-    // 盤面がない、またはゲームオーバー時は操作させない
     if (!board || board.length === 0 || isGameOver) return;
-
-    // 通常モードの時は、空のマス(0)をクリックしても無視する
     if (!isBombMode && board[y][x] === 0) return;
 
     let resultBoard;
@@ -90,10 +122,9 @@ export default function PuzzleBoard({ onBack }) {
       resultBoard = result.newBoard;
       removedCount = result.removedCount;
       
-      // ボムを1個消費して、モードを解除する
       setBombCount(prev => prev - 1);
       setIsBombMode(false);
-      setHoveredBlock({ x: -1, y: -1 }); // ボム解除時にホバーもリセット
+      setHoveredBlock({ x: -1, y: -1 });
     } 
     // 👆 通常のクリック（同色消し）の場合
     else {
@@ -102,16 +133,11 @@ export default function PuzzleBoard({ onBack }) {
       removedCount = result.removedCount;
     }
 
-    // 1個以上消えた場合（ボムまたは2個以上同色）
     if (removedCount > 0) {
-      // スコア計算＆加算
       const earnedScore = calculateScore(removedCount);
       setScore(prevScore => prevScore + earnedScore);
 
-      // 🌟 自然な落下の実装
       setBoard(resultBoard);
-
-      // 数ミリ秒のディレイを持たせてから落下後の盤面を描画
       setTimeout(() => {
         const droppedBoard = dropBlocks(resultBoard);
         setBoard(droppedBoard);
@@ -122,29 +148,23 @@ export default function PuzzleBoard({ onBack }) {
   // --- 見た目の設定 ---
   const getBlockColor = (value) => {
     switch (value) {
-      case 1: return '#ff4757'; // 赤
-      case 2: return '#1e90ff'; // 青
-      case 3: return '#2ed573'; // 緑
-      case 4: return '#ffa502'; // 黄
-      default: return 'transparent'; // 空(0)
+      case 1: return '#ff4757';
+      case 2: return '#1e90ff';
+      case 3: return '#2ed573';
+      case 4: return '#ffa502';
+      default: return 'transparent';
     }
   };
 
   if (board.length === 0) return null;
 
   return (
-    // 🌟 全体をダーク背景に
     <div className="puzzle-screen" style={styles.screenContainer}>
       
-      {/* 🌟 左上のホームボタン */}
-      <div 
-        onClick={onBack} 
-        style={styles.backButton}
-      >
+      <div onClick={onBack} style={styles.backButton}>
         ← HOME
       </div>
 
-      {/* 👑 ヘッダー */}
       <div style={styles.header}>
         <div style={styles.timerDisplay}>
           ⏱ {formatTime(timeLeft)}
@@ -156,14 +176,12 @@ export default function PuzzleBoard({ onBack }) {
         </div>
       </div>
 
-      {/* 🧩 8x8のグリッド（盤面）エリア */}
       <div style={{
         ...styles.boardPanel,
         opacity: isGameOver ? 0.3 : 1
       }}>
         {board.map((row, y) => 
           row.map((value, x) => {
-            // ボムの爆発範囲（3x3）の判定
             const isHoveredBombRange = isBombMode && 
                                        hoveredBlock.x !== -1 && 
                                        hoveredBlock.y !== -1 &&
@@ -181,16 +199,11 @@ export default function PuzzleBoard({ onBack }) {
                   backgroundColor: getBlockColor(value),
                   cursor: value === 0 || isGameOver ? 'default' : (isBombMode ? 'crosshair' : 'pointer'),
                   
-                  // 🌟 視認性改善: ボムモード中は全体を暗く、ホバー範囲だけ明るく
                   opacity: isBombMode ? (isHoveredBombRange && value !== 0 ? 1 : 0.3) : 1,
-                  
-                  // 🌟 視認性改善: ホバー範囲の枠線とグローを「白」にする
                   border: isHoveredBombRange && value !== 0 && !isGameOver ? '3px solid #ffffff' : 'none',
                   boxShadow: isHoveredBombRange && value !== 0 && !isGameOver 
                     ? '0 0 15px rgba(255, 255, 255, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.5)' 
                     : (value !== 0 ? 'inset 0 -5px 0 rgba(0,0,0,0.15)' : 'none'),
-                  
-                  // 🌟 視認性改善: ホバーした範囲を少し手前にフワッと浮かせる
                   transform: isHoveredBombRange && value !== 0 && !isGameOver ? 'scale(1.08)' : 'scale(1)',
                   zIndex: isHoveredBombRange ? 2 : 1, 
                 }}
@@ -201,7 +214,6 @@ export default function PuzzleBoard({ onBack }) {
       </div>
 
       <div style={styles.bombBtnContainer}>
-        {/* 🌟 ボム発動ボタン */}
         <button 
           onClick={() => {
             if (bombCount > 0 && !isGameOver) {
@@ -222,16 +234,12 @@ export default function PuzzleBoard({ onBack }) {
         </button>
       </div>
       
-      {/* 🏁 ゲームオーバー時のオーバーレイ表示 */}
       {isGameOver && (
         <div style={styles.gameOverOverlay}>
           <div style={styles.gameOverPanel}>
             <h1 style={styles.timeUpText}>TIME UP!</h1>
             <h2 style={styles.finalScoreText}>Score: {score}</h2>
-            <button 
-              onClick={onBack} 
-              style={styles.goHomeBtn}
-            >
+            <button onClick={onBack} style={styles.goHomeBtn}>
               ホームへ戻る
             </button>
           </div>
@@ -242,7 +250,6 @@ export default function PuzzleBoard({ onBack }) {
   );
 }
 
-// --- インラインスタイル定義 (ネオン・ダークテーマ) ---
 const styles = {
   screenContainer: {
     backgroundColor: '#0a0e17', color: '#f1f2f6', fontFamily: 'sans-serif',
@@ -282,7 +289,6 @@ const styles = {
   },
   block: {
     width: '50px', height: '50px', borderRadius: '10px',
-    // 🌟 変更: opacity や transform など、すべてのアニメーションを滑らかにする
     transition: 'all 0.15s ease-out',
   },
   bombBtnContainer: {
