@@ -1,60 +1,60 @@
 import React, { useState } from 'react';
 import './App.css';
 
-import Login from './components/Login'; // ★追加
+import Login from './components/Login';
 import Home from './components/Home';
 import Timer from './components/Timer';
 import Ranking from './components/Ranking';
 import PuzzleBoard from './components/PuzzleBoard';
 
 function App() {
-  // ★追加：ログインしているユーザーの情報を保存する場所（最初は誰もログインしていないので null）
   const [currentUser, setCurrentUser] = useState(null);
-  
-  // 画面遷移用の状態（最初はホーム画面）
   const [view, setView] = useState('home');
 
-  // ★追加：まだログインしていなければ、強制的にLogin画面を表示！
+  // ★追加：ログアウト処理
+  const handleLogout = () => {
+    if (window.confirm("ログアウトしますか？")) {
+      setCurrentUser(null);
+      setView('home'); // 次回ログイン時にホームから始まるようにリセット
+    }
+  };
+
   if (!currentUser) {
     return (
       <Login 
         onLogin={(userId) => {
-          // ログインボタンが押されたら、ここでユーザーIDを保存する
           setCurrentUser({ id: userId });
-          setView('home'); // ホーム画面に移動
+          setView('home');
         }} 
       />
     );
   }
 
-  // --------------------------------------------------------
-  // ここから下は、ログイン済みの人だけが見れる画面です！
-  // --------------------------------------------------------
-
   // ① ホーム画面
   if (view === 'home') {
     return (
       <div>
-        {/* テスト用に、画面右上にログイン中のIDを表示してみましょう */}
-        <div style={{ position: 'absolute', top: 10, right: 10, color: '#c4b5fd', fontSize: '14px' }}>
-          ID: {currentUser.id}
-        </div>
-        <Home onNavigate={setView} />
+        {/* ★ここにあったID表示の代わりに、Homeの中でログアウトボタンと一緒に表示させるのが綺麗です */}
+        <Home 
+          onNavigate={setView} 
+          currentUser={currentUser} // ID表示用に渡す
+          onLogout={handleLogout}    // ★ログアウト関数を渡す
+        />
       </div>
     );
   }
 
-  // ② タイマー画面（currentUserを渡す！）
+  // ② タイマー画面
   if (view === 'timer') {
     return <Timer onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ③ ランキング画面（念のため渡しておく）
+  // ③ ランキング画面
   if (view === 'ranking') {
     return <Ranking onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
-  // ④ ゲーム画面（currentUserを渡す！）
+  // ④ ゲーム画面
   if (view === 'game') {
     return <PuzzleBoard onBack={() => setView('home')} currentUser={currentUser} />;
   }
