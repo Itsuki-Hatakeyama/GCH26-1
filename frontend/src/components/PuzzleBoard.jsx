@@ -11,6 +11,12 @@ import {
   COLS
 } from '../logic/puzzle';
 
+// 【ここから追加】エフェクトの読み込み 
+import { particleEngine } from '../effects/particles';
+import { shakeScreen } from '../effects/animations';
+import { playSound } from '../effects/audio';
+// 【ここまで追加】 
+
 export default function PuzzleBoard({ onBack, userId }) {
   const [board, setBoard] = useState([]);
   const [score, setScore] = useState(0);
@@ -26,6 +32,7 @@ export default function PuzzleBoard({ onBack, userId }) {
   const API_BASE = "http://127.0.0.1:5000";
 
   useEffect(() => {
+    particleEngine.init();
     setBoard(createBoard());
 
     const fetchInventory = async () => {
@@ -71,9 +78,14 @@ export default function PuzzleBoard({ onBack, userId }) {
     return `${m}:${s}`;
   };
 
-  const handleBlockClick = (x, y) => {
+  // 引数に e を追加
+  const handleBlockClick = (e, x, y) => {
     if (!isGameStarted || !board || board.length === 0 || isGameOver) return;
     if (!isBombMode && board[y][x].color === 0) return; 
+
+    // クリックしたブロックの色とボム状態を保存 
+    const targetColor = getBlockColor(board[y][x].color);
+    const wasBombAction = isBombMode;
 
     let resultBoard;
     let removedCount = 0;
@@ -104,6 +116,21 @@ export default function PuzzleBoard({ onBack, userId }) {
       const earnedScore = calculateScore(removedCount);
       setScore(prevScore => prevScore + earnedScore);
 
+      // エフェクトの発動
+      const rect = e.target.getBoundingClientRect();
+      const clickX = rect.left + rect.width / 2;
+      const clickY = rect.top + rect.height / 2;
+
+      if (wasBombAction) {
+        playSound('bomb'); // 爆発音
+        shakeScreen(true); // 激しい揺れ
+        particleEngine.emit(clickX, clickY, targetColor, true); // 大爆発エフェクト
+      } else {
+        playSound('pop'); // ポップ音
+        shakeScreen(false); // 軽い揺れ
+        particleEngine.emit(clickX, clickY, targetColor, false); // 星エフェクト
+      }
+
       setBoard(resultBoard);
       
       setTimeout(() => {
@@ -126,7 +153,7 @@ export default function PuzzleBoard({ onBack, userId }) {
   if (board.length === 0) return null;
 
   return (
-    <div className="puzzle-screen" style={styles.screenContainer}>
+    <div className="puzzle-screen game-container" style={styles.screenContainer}>
       
       <div onClick={onBack} style={styles.backButton}>← HOME</div>
 
@@ -153,7 +180,7 @@ export default function PuzzleBoard({ onBack, userId }) {
               return (
                 <div
                   key={block.id} 
-                  onClick={() => handleBlockClick(x, y)}
+                  onClick={(e) => handleBlockClick(e, x, y)}
                   onMouseEnter={() => isBombMode && setHoveredBlock({ x, y })}
                   onMouseLeave={() => isBombMode && setHoveredBlock({ x: -1, y: -1 })}
                   style={{
