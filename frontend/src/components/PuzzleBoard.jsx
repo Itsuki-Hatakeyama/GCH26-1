@@ -22,13 +22,17 @@ export default function PuzzleBoard({ onBack, userId }) {
   const [isGameOver, setIsGameOver] = useState(false);
   const [hoveredBlock, setHoveredBlock] = useState({ x: -1, y: -1 });
 
+  // 🌟 修正①：URLを 127.0.0.1 に統一して定数化しました！
+  const API_BASE = "http://127.0.0.1:5000";
+
   useEffect(() => {
     setBoard(createBoard());
 
     const fetchInventory = async () => {
       if (!userId) return; 
       try {
-        const response = await fetch(`http://localhost:5000/api/user/inventory?user_id=${userId}`);
+        // 🌟 修正①：localhost から API_BASE(127.0.0.1) に変更！
+        const response = await fetch(`${API_BASE}/api/user/inventory?user_id=${userId}`);
         if (response.ok) {
           const data = await response.json();
           setBombCount(data.items?.bomb || 0); 
@@ -49,7 +53,8 @@ export default function PuzzleBoard({ onBack, userId }) {
       const sendScoreToBackend = async () => {
         if (!userId) return;
         try {
-          await fetch('http://localhost:5000/api/game/score', {
+          // 🌟 修正①：localhost から API_BASE(127.0.0.1) に変更！
+          await fetch(`${API_BASE}/api/game/score`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId, score: score }),
@@ -68,7 +73,7 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   const handleBlockClick = (x, y) => {
     if (!isGameStarted || !board || board.length === 0 || isGameOver) return;
-    if (!isBombMode && board[y][x].color === 0) return; // 🌟 変更: .color を見る
+    if (!isBombMode && board[y][x].color === 0) return; 
 
     let resultBoard;
     let removedCount = 0;
@@ -81,6 +86,14 @@ export default function PuzzleBoard({ onBack, userId }) {
       setBombCount(prev => prev - 1);
       setIsBombMode(false);
       setHoveredBlock({ x: -1, y: -1 });
+
+      // 🌟🌟 修正②：ボムを消費した瞬間にバックエンドへ報告するAPI通信を追加！ 🌟🌟
+      fetch(`${API_BASE}/api/game/use_bomb`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+      }).catch(err => console.error("💣 ボム消費エラー:", err));
+
     } else {
       const result = removeBlocks(board, x, y);
       resultBoard = result.newBoard;
@@ -93,11 +106,10 @@ export default function PuzzleBoard({ onBack, userId }) {
 
       setBoard(resultBoard);
       
-      // 🌟 ブロックが消えるアニメーションを見せるため、落とすまで少し待つ！
       setTimeout(() => {
         const droppedBoard = dropBlocks(resultBoard);
         setBoard(droppedBoard);
-      }, 250); // 250ミリ秒後にストンと落ちる
+      }, 250); 
     }
   };
 
@@ -130,7 +142,6 @@ export default function PuzzleBoard({ onBack, userId }) {
         ...styles.boardPanel,
         opacity: isGameOver ? 0.3 : 1
       }}>
-        {/* 🌟 落下アニメーションの要：相対位置のコンテナを用意 */}
         <div style={styles.boardInner}>
           {board.map((row, y) => 
             row.map((block, x) => {
@@ -141,19 +152,18 @@ export default function PuzzleBoard({ onBack, userId }) {
 
               return (
                 <div
-                  key={block.id} // 🌟 ここが超重要！IDがあるからReactが「どのブロックが落ちたか」追跡できる
+                  key={block.id} 
                   onClick={() => handleBlockClick(x, y)}
                   onMouseEnter={() => isBombMode && setHoveredBlock({ x, y })}
                   onMouseLeave={() => isBombMode && setHoveredBlock({ x: -1, y: -1 })}
                   style={{
                     ...styles.block,
-                    position: 'absolute', // 🌟 絶対座標に変更
-                    left: `${x * 56}px`,  // x座標の計算 (50px + 隙間6px)
-                    top: `${y * 56}px`,   // y座標の計算
+                    position: 'absolute', 
+                    left: `${x * 56}px`,  
+                    top: `${y * 56}px`,   
                     backgroundColor: getBlockColor(block.color),
                     cursor: block.color === 0 || isGameOver || !isGameStarted ? 'default' : (isBombMode ? 'crosshair' : 'pointer'),
                     
-                    // 🌟 0になったら透明にして縮小する
                     opacity: block.color === 0 ? 0 : (isBombMode ? (isHoveredBombRange ? 1 : 0.3) : 1),
                     transform: block.color === 0 ? 'scale(0)' : (isHoveredBombRange && !isGameOver ? 'scale(1.08)' : 'scale(1)'),
                     
@@ -163,7 +173,6 @@ export default function PuzzleBoard({ onBack, userId }) {
                       : (block.color !== 0 ? 'inset 0 -5px 0 rgba(0,0,0,0.15)' : 'none'),
                     zIndex: isHoveredBombRange ? 2 : 1, 
                     
-                    // 🌟 落下と消去のスムーズなアニメーション設定
                     transition: 'top 0.4s cubic-bezier(0.25, 1, 0.5, 1), left 0.4s ease, transform 0.2s ease, opacity 0.2s ease',
                   }}
                 />
@@ -235,10 +244,9 @@ const styles = {
     boxShadow: '0 0 15px rgba(30, 144, 255, 0.5), inset 0 0 10px rgba(30, 144, 255, 0.3)', 
     transition: 'opacity 0.3s ease-in-out',
   },
-  // 🌟 アニメーションを機能させるための基準となる透明な箱
   boardInner: {
     position: 'relative',
-    width: '442px', // (50px + 6px) * 8列 - 6px = 442px
+    width: '442px', 
     height: '442px',
   },
   block: {
