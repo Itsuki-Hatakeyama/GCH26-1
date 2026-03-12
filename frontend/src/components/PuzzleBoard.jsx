@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// 新妻さんが作った最強のロジックをインポート！
+
 import {
   createBoard,
   removeBlocks,
