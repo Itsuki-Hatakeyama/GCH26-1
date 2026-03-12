@@ -87,9 +87,17 @@ export function dropBlocks(board) {
   return newBoard;
 }
 
-export function calculateScore(removedCount) {
+// 🌟 コンボ機能追加（パターンA）：comboCountを受け取って倍率をかける
+export function calculateScore(removedCount, comboCount = 0) {
   if (removedCount < 3) return 0;
-  return removedCount * removedCount * 10;
+  
+  // 基本スコア
+  const baseScore = removedCount * removedCount * 10;
+  
+  // 1コンボにつき +0.2倍（最大5倍まで）
+  const multiplier = Math.min(1 + (comboCount * 0.2), 5.0);
+  
+  return Math.floor(baseScore * multiplier);
 }
 
 export function activateBomb(board, centerX, centerY) {
