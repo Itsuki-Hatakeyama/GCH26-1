@@ -6,6 +6,7 @@ import Home from './components/Home';
 import Timer from './components/Timer';
 import Ranking from './components/Ranking';
 import PuzzleBoard from './components/PuzzleBoard';
+import Profile from './components/Profile';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -58,6 +59,11 @@ function App() {
   if (view === 'game') {
     return <PuzzleBoard onBack={() => setView('home')} currentUser={currentUser} />;
   }
+
+  // ⑤ プロフィール画面を追加
+  if (view === 'profile') {
+    return <Profile onBack={() => setView('home')} currentUser={currentUser} />;
+  } 
 
   return null;
 }
