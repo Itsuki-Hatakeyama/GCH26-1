@@ -11,7 +11,6 @@ import {
   COLS
 } from '../logic/puzzle';
 
-// 【エフェクトの読み込み（キープ！）】 
 import { particleEngine } from '../effects/particles';
 import { shakeScreen } from '../effects/animations';
 import { playSound } from '../effects/audio';
@@ -24,17 +23,25 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60); 
+  // 🌟 追加：残り時間を岩落下タイマーの中で参照するためのRef
+  const timeLeftRef = useRef(timeLeft); 
+  
   const [isGameOver, setIsGameOver] = useState(false);
+  const [gameOverReason, setGameOverReason] = useState(""); 
+  
+  const [isPaused, setIsPaused] = useState(false);
   const [hoveredBlock, setHoveredBlock] = useState({ x: -1, y: -1 });
 
-  // 🌟 追加：ポーズとコンボ用の状態・Ref
-  const [isPaused, setIsPaused] = useState(false);
   const [comboCount, setComboCount] = useState(0);
   const comboTimerRef = useRef(null);
 
   const API_BASE = "http://127.0.0.1:5000";
 
-  // 🌟 追加：コンポーネントが消える時にタイマーを安全に解除
+  // タイマーが更新されるたびにRefにも最新の時間を保存する
+  useEffect(() => {
+    timeLeftRef.current = timeLeft;
+  }, [timeLeft]);
+
   useEffect(() => {
     return () => {
       if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
@@ -60,26 +67,96 @@ export default function PuzzleBoard({ onBack, userId }) {
     fetchInventory();
   }, [userId]);
 
-  // 🌟 修正：ポーズ中(!isPaused)はタイマーを進めない
+  const handleGameOver = (reason) => {
+    setGameOverReason(reason);
+    setIsGameOver(true);
+    if (!userId) return;
+    fetch(`${API_BASE}/api/game/score`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, score: score }),
+    }).catch(() => {});
+  };
+
+  const hasAvailableMoves = (currentBoard) => {
+    for (let y = 0; y < currentBoard.length; y++) {
+      for (let x = 0; x < currentBoard[y].length; x++) {
+        const color = currentBoard[y][x].color;
+        if (color >= 1 && color <= 4) {
+          if (x + 1 < currentBoard[y].length && currentBoard[y][x + 1].color === color) return true;
+          if (y + 1 < currentBoard.length && currentBoard[y + 1][x].color === color) return true;
+        }
+      }
+    }
+    return false; 
+  };
+
   useEffect(() => {
     if (isGameStarted && timeLeft > 0 && !isGameOver && !isPaused) {
       const timerId = setInterval(() => setTimeLeft((t) => t - 1), 1000);
       return () => clearInterval(timerId);
     } else if (isGameStarted && timeLeft === 0 && !isGameOver) {
-      setIsGameOver(true);
-      const sendScoreToBackend = async () => {
-        if (!userId) return;
-        try {
-          await fetch(`${API_BASE}/api/game/score`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, score: score }),
-          });
-        } catch (error) {}
-      };
-      sendScoreToBackend();
+      handleGameOver("TIME UP!");
     }
-  }, [isGameStarted, timeLeft, isGameOver, isPaused, score, userId]);
+  }, [isGameStarted, timeLeft, isGameOver, isPaused]);
+
+  useEffect(() => {
+    if (isGameStarted && !isGameOver && board.length > 0) {
+      const canMove = hasAvailableMoves(board);
+      if (!canMove && bombCount <= 0) {
+        handleGameOver("NO MORE MOVES...");
+      }
+    }
+  }, [board, bombCount, isGameStarted, isGameOver]);
+
+  // 🌟 変更：残り時間に応じて間隔が狭まる岩落下システム
+  useEffect(() => {
+    if (!isGameStarted || isGameOver || isPaused) return;
+
+    let timeoutId;
+
+    const scheduleNextRock = () => {
+      // 🌟 残り時間（割合）を計算：最初(60秒)は1.0、最後(0秒)は0.0
+      const ratio = Math.max(0, timeLeftRef.current) / 60;
+      
+      // 🌟 落下間隔の計算：最短2000ms（2秒）〜 最長8000ms（8秒）
+      // 残り時間が減る（ratioが小さくなる）ほど、delayが短くなる！
+      const delay = 2000 + (6000 * ratio);
+
+      timeoutId = setTimeout(() => {
+        setBoard(prevBoard => {
+          const newBoard = prevBoard.map(row => row.map(block => ({ ...block })));
+          
+          const validTargets = [];
+          for (let y = 0; y < newBoard.length; y++) {
+            for (let x = 0; x < newBoard[y].length; x++) {
+              if (newBoard[y][x].color >= 1 && newBoard[y][x].color <= 4) {
+                validTargets.push({ x, y });
+              }
+            }
+          }
+
+          if (validTargets.length > 0) {
+            const rand = validTargets[Math.floor(Math.random() * validTargets.length)];
+            newBoard[rand.y][rand.x].color = 5;
+            playSound('bomb'); // 岩が落ちた音
+            shakeScreen(false); // 軽く揺れる
+          }
+          return newBoard;
+        });
+
+        // 🌟 終わったら次の岩をセット（徐々に早くなる）
+        scheduleNextRock();
+      }, delay);
+    };
+
+    // ループ開始
+    scheduleNextRock();
+
+    // コンポーネントが消える時やポーズ時は安全に止める
+    return () => clearTimeout(timeoutId);
+  }, [isGameStarted, isGameOver, isPaused]);
+
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -88,23 +165,21 @@ export default function PuzzleBoard({ onBack, userId }) {
   };
 
   const handleBlockClick = (e, x, y) => {
-    // 🌟 修正：ポーズ中(isPaused)はクリック無効
     if (!isGameStarted || !board || board.length === 0 || isGameOver || isPaused) return;
-    if (!isBombMode && board[y][x].color === 0) return; 
+    if (!isBombMode && (board[y][x].color === 0 || board[y][x].color === 5)) return; 
 
-    // クリックしたブロックの色とボム状態を保存 
     const targetColor = getBlockColor(board[y][x].color);
     const wasBombAction = isBombMode;
 
     let resultBoard;
     let removedCount = 0;
-    let usedBombThisTurn = false; // 🌟 追加：このターンでボムを使ったかフラグ
+    let usedBombThisTurn = false; 
 
     if (isBombMode) {
       const result = activateBomb(board, x, y);
       resultBoard = result.newBoard;
       removedCount = result.removedCount;
-      usedBombThisTurn = true; // ボム使用ON
+      usedBombThisTurn = true; 
       
       setBombCount(prev => prev - 1);
       setIsBombMode(false);
@@ -123,34 +198,30 @@ export default function PuzzleBoard({ onBack, userId }) {
     }
 
     if (removedCount > 0) {
-      // 🌟 追加：コンボ数を渡してスコア計算
       let earnedScore = calculateScore(removedCount, comboCount);
       
-      // 🌟 追加：ボムを使った場合はスコア2倍！
       if (usedBombThisTurn) {
         earnedScore *= 2;
       }
       
       setScore(prevScore => prevScore + earnedScore);
 
-      // 【元のエフェクト処理（キープ！）】
       const rect = e.target.getBoundingClientRect();
       const clickX = rect.left + rect.width / 2;
       const clickY = rect.top + rect.height / 2;
 
       if (wasBombAction) {
-        playSound('bomb'); // 爆発音
-        shakeScreen(true); // 激しい揺れ
-        particleEngine.emit(clickX, clickY, targetColor, true); // 大爆発エフェクト
+        playSound('bomb'); 
+        shakeScreen(true); 
+        particleEngine.emit(clickX, clickY, targetColor, true); 
       } else {
-        playSound('pop'); // ポップ音
-        shakeScreen(false); // 軽い揺れ
-        particleEngine.emit(clickX, clickY, targetColor, false); // 星エフェクト
+        playSound('pop'); 
+        shakeScreen(false); 
+        particleEngine.emit(clickX, clickY, targetColor, false); 
       }
 
       setBoard(resultBoard);
 
-      // 🌟 追加：コンボ数を増やし、2秒タイマーをセット
       setComboCount(prev => prev + 1);
       if (comboTimerRef.current) {
         clearTimeout(comboTimerRef.current);
@@ -172,11 +243,11 @@ export default function PuzzleBoard({ onBack, userId }) {
       case 2: return '#1e90ff';
       case 3: return '#2ed573';
       case 4: return '#ffa502';
+      case 5: return '#576574'; 
       default: return 'transparent';
     }
   };
 
-  // 🌟 追加：倍率の計算
   const currentMultiplier = Math.min(1 + (comboCount * 0.2), 5.0).toFixed(1);
 
   if (board.length === 0) return null;
@@ -187,7 +258,6 @@ export default function PuzzleBoard({ onBack, userId }) {
       <div onClick={onBack} style={styles.backButton}>← HOME</div>
 
       <div style={styles.header}>
-        {/* 🌟 修正：タイマーの横にポーズボタン */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div style={styles.timerDisplay}>⏱ {formatTime(timeLeft)}</div>
           {isGameStarted && !isGameOver && (
@@ -203,7 +273,6 @@ export default function PuzzleBoard({ onBack, userId }) {
         <div style={styles.infoDisplay}>
           <div style={styles.scoreText}>SCORE: {score}</div>
           <div style={styles.bombText}>💣: {bombCount}</div>
-          {/* 🌟 追加：コンボと倍率の表示 */}
           {comboCount > 0 && (
             <div style={styles.comboContainer}>
               <span style={styles.comboText}>{comboCount} COMBO!! 🔥</span>
@@ -215,7 +284,7 @@ export default function PuzzleBoard({ onBack, userId }) {
 
       <div style={{
         ...styles.boardPanel,
-        opacity: isGameOver || isPaused ? 0.3 : 1 // 🌟 修正：ポーズ中は暗くする
+        opacity: isGameOver || isPaused ? 0.3 : 1 
       }}>
         <div style={styles.boardInner}>
           {board.map((row, y) => 
@@ -228,7 +297,7 @@ export default function PuzzleBoard({ onBack, userId }) {
               return (
                 <div
                   key={block.id} 
-                  onClick={(e) => handleBlockClick(e, x, y)} // 引数eをキープ
+                  onClick={(e) => handleBlockClick(e, x, y)}
                   onMouseEnter={() => isBombMode && setHoveredBlock({ x, y })}
                   onMouseLeave={() => isBombMode && setHoveredBlock({ x: -1, y: -1 })}
                   style={{
@@ -237,8 +306,7 @@ export default function PuzzleBoard({ onBack, userId }) {
                     left: `${x * 56}px`,  
                     top: `${y * 56}px`,   
                     backgroundColor: getBlockColor(block.color),
-                    // 🌟 修正：ポーズ中もカーソルをdefaultに
-                    cursor: block.color === 0 || isGameOver || !isGameStarted || isPaused ? 'default' : (isBombMode ? 'crosshair' : 'pointer'),
+                    cursor: block.color === 0 || block.color === 5 || isGameOver || !isGameStarted || isPaused ? 'default' : (isBombMode ? 'crosshair' : 'pointer'),
                     
                     opacity: block.color === 0 ? 0 : (isBombMode ? (isHoveredBombRange ? 1 : 0.3) : 1),
                     transform: block.color === 0 ? 'scale(0)' : (isHoveredBombRange && !isGameOver && !isPaused ? 'scale(1.08)' : 'scale(1)'),
@@ -246,12 +314,14 @@ export default function PuzzleBoard({ onBack, userId }) {
                     border: isHoveredBombRange && block.color !== 0 && !isGameOver && !isPaused ? '3px solid #ffffff' : 'none',
                     boxShadow: isHoveredBombRange && block.color !== 0 && !isGameOver && !isPaused
                       ? '0 0 15px rgba(255, 255, 255, 0.9), inset 0 0 10px rgba(255, 255, 255, 0.5)' 
-                      : (block.color !== 0 ? 'inset 0 -5px 0 rgba(0,0,0,0.15)' : 'none'),
+                      : (block.color !== 0 && block.color !== 5 ? 'inset 0 -5px 0 rgba(0,0,0,0.15)' : 'none'),
                     zIndex: isHoveredBombRange ? 2 : 1, 
                     
                     transition: 'top 0.4s cubic-bezier(0.25, 1, 0.5, 1), left 0.4s ease, transform 0.2s ease, opacity 0.2s ease',
                   }}
-                />
+                >
+                  {block.color === 5 && <span style={{ fontSize: '26px' }}>🪨</span>}
+                </div>
               );
             })
           )}
@@ -266,7 +336,7 @@ export default function PuzzleBoard({ onBack, userId }) {
               if (isBombMode) setHoveredBlock({ x: -1, y: -1 }); 
             }
           }}
-          disabled={!isGameStarted || isGameOver || bombCount <= 0 || isPaused} // 🌟 修正：ポーズ中はボタン無効化
+          disabled={!isGameStarted || isGameOver || bombCount <= 0 || isPaused} 
           style={{
             ...styles.bombBtn,
             background: isBombMode ? 'linear-gradient(45deg, #ff4757, #ff6b81)' : 'linear-gradient(45deg, #1e90ff, #70a1ff)',
@@ -288,7 +358,6 @@ export default function PuzzleBoard({ onBack, userId }) {
         </div>
       )}
       
-      {/* 🌟 追加：ポーズメニュー */}
       {isPaused && (
         <div style={styles.overlay}>
           <div style={styles.pausePanel}>
@@ -304,7 +373,7 @@ export default function PuzzleBoard({ onBack, userId }) {
       {isGameOver && (
         <div style={styles.overlay}>
           <div style={styles.gameOverPanel}>
-            <h1 style={styles.timeUpText}>TIME UP!</h1>
+            <h1 style={styles.timeUpText}>{gameOverReason}</h1>
             <h2 style={styles.finalScoreText}>Score: {score}</h2>
             <button onClick={onBack} style={styles.goHomeBtn}>ホームへ戻る</button>
           </div>
@@ -324,7 +393,6 @@ const styles = {
   header: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '40px', marginBottom: '20px', width: '90%', maxWidth: '600px' },
   timerDisplay: { fontSize: '64px', fontWeight: 'bold', color: '#1e90ff', textShadow: '0 0 10px rgba(30, 144, 255, 0.7), 0 0 20px rgba(30, 144, 255, 0.5)' },
   
-  // 🌟 追加：ポーズボタンのスタイル
   pauseBtnIcon: { 
     background: 'none', border: '2px solid #1e90ff', color: '#1e90ff', fontSize: '24px', 
     borderRadius: '50%', width: '48px', height: '48px', cursor: 'pointer',
@@ -336,7 +404,6 @@ const styles = {
   scoreText: { fontSize: '28px', fontWeight: 'bold', color: '#1e90ff', textShadow: '0 0 5px rgba(30, 144, 255, 0.7)' },
   bombText: { fontSize: '28px', fontWeight: 'bold', color: '#f1f2f6', textShadow: '0 0 5px rgba(241, 242, 246, 0.7)' },
   
-  // 🌟 追加：コンボのスタイル
   comboContainer: { display: 'flex', alignItems: 'baseline', gap: '8px' },
   comboText: { fontSize: '24px', fontWeight: 'bold', color: '#ffa502', textShadow: '0 0 8px rgba(255, 165, 2, 0.8)' },
   multiplierText: { fontSize: '22px', fontWeight: 'bold', color: '#ff4757', textShadow: '0 0 8px rgba(255, 71, 87, 0.8)' },
@@ -347,14 +414,8 @@ const styles = {
     boxShadow: '0 0 15px rgba(30, 144, 255, 0.5), inset 0 0 10px rgba(30, 144, 255, 0.3)', 
     transition: 'opacity 0.3s ease-in-out',
   },
-  boardInner: {
-    position: 'relative',
-    width: '442px', 
-    height: '442px',
-  },
-  block: {
-    width: '50px', height: '50px', borderRadius: '10px',
-  },
+  boardInner: { position: 'relative', width: '442px', height: '442px' },
+  block: { display: 'flex', justifyContent: 'center', alignItems: 'center', width: '50px', height: '50px', borderRadius: '10px' },
   
   bombBtnContainer: { marginTop: '25px', marginBottom: '30px' },
   bombBtn: { padding: '15px 40px', fontSize: '20px', fontWeight: 'bold', color: 'white', border: 'none', borderRadius: '12px' },
@@ -363,8 +424,6 @@ const styles = {
   
   overlay: { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
   startPanel: { backgroundColor: 'rgba(10, 14, 23, 0.95)', border: '3px solid #1e90ff', padding: '50px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 0 20px rgba(30, 144, 255, 0.5)' },
-  
-  // 🌟 追加：ポーズパネルのスタイル
   pausePanel: { backgroundColor: 'rgba(10, 14, 23, 0.95)', border: '3px solid #ffa502', padding: '50px', borderRadius: '20px', textAlign: 'center', boxShadow: '0 0 20px rgba(255, 165, 2, 0.5)' },
   resumeBtn: { padding: '15px 30px', fontSize: '24px', fontWeight: 'bold', backgroundColor: '#ffa502', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 0 15px rgba(255, 165, 2, 0.7)' },
 
