@@ -1,0 +1,108 @@
+class Particle {
+  constructor(x, y, color, isBomb) {
+    this.x = x;
+    this.y = y;
+    this.color = color;
+    // ランダムな方向に飛ばす
+    const angle = Math.random() * Math.PI * 2;
+    const speed = isBomb ? Math.random() * 15 + 5 : Math.random() * 8 + 2;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    
+    this.life = 1.0; // 透明度 (1.0 -> 0.0で消滅)
+    this.decay = Math.random() * 0.03 + 0.02; // 消えるスピード
+    this.size = isBomb ? Math.random() * 6 + 4 : Math.random() * 4 + 2;
+  }
+
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.vy += 0.2; // 重力（下に向かって落ちる）
+    this.life -= this.decay;
+    this.size *= 0.96; // だんだん小さくなる
+  }
+
+  draw(ctx) {
+    ctx.globalAlpha = Math.max(0, this.life);
+    ctx.fillStyle = this.color;
+    // 🌟 グロー（発光）効果
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = this.color;
+    
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+class ParticleSystem {
+  constructor() {
+    this.particles = [];
+    this.isInitialized = false;
+  }
+
+  // Reactコンポーネントがマウントされた時に呼ばれる
+  init() {
+    if (this.isInitialized || document.getElementById('effect-canvas')) return;
+    
+    this.canvas = document.createElement('canvas');
+    this.canvas.id = 'effect-canvas';
+    this.ctx = this.canvas.getContext('2d');
+    
+    // 画面全体を覆う、クリックをすり抜ける透明なCanvas
+    Object.assign(this.canvas.style, {
+      position: 'fixed', top: '0', left: '0',
+      width: '100vw', height: '100vh',
+      pointerEvents: 'none', zIndex: '9999'
+    });
+    
+    document.body.appendChild(this.canvas);
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    
+    this.isInitialized = true;
+    this.loop();
+  }
+
+  resize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  emit(x, y, color, isBomb = false) {
+    const count = isBomb ? 80 : 25;
+    for (let i = 0; i < count; i++) {
+      this.particles.push(new Particle(x, y, color, isBomb));
+      // 🌟 白いコア（芯）を混ぜることで、より「光っている」ように見せる
+      if (i % 3 === 0) {
+        this.particles.push(new Particle(x, y, '#ffffff', isBomb));
+      }
+    }
+  }
+
+  loop() {
+    requestAnimationFrame(() => this.loop());
+    if (!this.ctx) return;
+
+    // ❌ 修正前
+    // this.ctx.globalCompositeOperation = 'source-over';
+    // this.ctx.fillStyle = 'rgba(10, 14, 23, 0.3)';
+    // this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // ⭕ 修正後
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    
+    this.ctx.globalCompositeOperation = 'lighter'; // 加算合成で光らせる
+    
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.update();
+      p.draw(this.ctx);
+      if (p.life <= 0 || p.size <= 0.1) {
+        this.particles.splice(i, 1);
+      }
+    }
+  }
+}
+
+export const particleEngine = new ParticleSystem();

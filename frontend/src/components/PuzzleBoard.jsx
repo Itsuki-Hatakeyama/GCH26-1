@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-// 新妻さんが作った最強のロジックをインポート！
+
 import {
   createBoard,
   removeBlocks,
   dropBlocks,
   calculateScore,
   activateBomb,
-  ROWS,
   COLS
 } from '../logic/puzzle';
+
+// 🌟 【追加】エフェクト用のモジュールをインポート
+import { particleEngine } from '../effects/particles';
+import { shakeScreen } from '../effects/animations';
+import { playSound } from '../effects/audio';
 
 // 🌟 App.jsから「ホームに戻る関数(onBack)」と「ログイン中のユーザーID(userId)」を受け取る！
 export default function PuzzleBoard({ onBack, userId }) {
@@ -30,6 +34,9 @@ export default function PuzzleBoard({ onBack, userId }) {
   // 🌟 画面が開いた瞬間の処理（初期盤面生成 ＆ ボム所持数の取得）
   useEffect(() => {
     setBoard(createBoard());
+
+    // 🌟 【追加】画面ロード時にパーティクルエンジン（Canvas）を起動
+    particleEngine.init();
 
     // 🚀 大翔さんのAPI④: アイテム所持数の確認
     const fetchInventory = async () => {
@@ -108,10 +115,26 @@ export default function PuzzleBoard({ onBack, userId }) {
     return `${m}:${s}`;
   };
 
+  // --- 見た目の設定 ---
+  const getBlockColor = (value) => {
+    switch (value) {
+      case 1: return '#ff4757';
+      case 2: return '#1e90ff';
+      case 3: return '#2ed573';
+      case 4: return '#ffa502';
+      default: return 'transparent';
+    }
+  };
+
   // --- クリックされた時の処理 ---
-  const handleBlockClick = (x, y) => {
+  // 🌟 【変更】クリックイベント情報(e)を受け取れるように引数を追加
+  const handleBlockClick = (e, x, y) => {
     if (!board || board.length === 0 || isGameOver) return;
     if (!isBombMode && board[y][x] === 0) return;
+
+    // 🌟 【追加】演出のために、クリックしたブロックの「色」と「ボム使用フラグ」を記憶しておく
+    const targetColor = getBlockColor(board[y][x]);
+    const wasBombAction = isBombMode;
 
     let resultBoard;
     let removedCount = 0;
@@ -133,9 +156,30 @@ export default function PuzzleBoard({ onBack, userId }) {
       removedCount = result.removedCount;
     }
 
+    // ★ ブロックが消えた場合の処理
     if (removedCount > 0) {
       const earnedScore = calculateScore(removedCount);
       setScore(prevScore => prevScore + earnedScore);
+
+      // 🌟🌟🌟 【追加】ここから「気持ちいい演出」の発動！ 🌟🌟🌟
+      
+      // 1. クリックされた正確な画面座標を取得（要素の中心点を計算）
+      const rect = e.target.getBoundingClientRect();
+      const clickX = rect.left + rect.width / 2;
+      const clickY = rect.top + rect.height / 2;
+
+      // 2. ボムか通常かで演出を分岐
+      if (wasBombAction) {
+        playSound('bomb'); // 💥 爆発音
+        shakeScreen(true); // 💥 激しい画面揺れ
+        particleEngine.emit(clickX, clickY, targetColor, true); // 💥 大爆発エフェクト
+      } else {
+        playSound('pop'); // ✨ ポップ音
+        shakeScreen(false); // ✨ 軽い画面揺れ
+        particleEngine.emit(clickX, clickY, targetColor, false); // ✨ 星が弾けるエフェクト
+      }
+      
+      // 🌟🌟🌟 【追加】ここまで 🌟🌟🌟
 
       setBoard(resultBoard);
       setTimeout(() => {
@@ -145,21 +189,11 @@ export default function PuzzleBoard({ onBack, userId }) {
     }
   };
 
-  // --- 見た目の設定 ---
-  const getBlockColor = (value) => {
-    switch (value) {
-      case 1: return '#ff4757';
-      case 2: return '#1e90ff';
-      case 3: return '#2ed573';
-      case 4: return '#ffa502';
-      default: return 'transparent';
-    }
-  };
-
   if (board.length === 0) return null;
 
   return (
-    <div className="puzzle-screen" style={styles.screenContainer}>
+    // 🌟 【変更】一番外側のdivに className="game-container" を追加（Anime.jsがこのクラス名を探して揺らします）
+    <div className="puzzle-screen game-container" style={styles.screenContainer}>
       
       <div onClick={onBack} style={styles.backButton}>
         ← HOME
@@ -180,6 +214,7 @@ export default function PuzzleBoard({ onBack, userId }) {
         ...styles.boardPanel,
         opacity: isGameOver ? 0.3 : 1
       }}>
+        {/* 🌟 【変更】ブロック描画部分の onClick に e(イベント) を渡すように修正 */}
         {board.map((row, y) => 
           row.map((value, x) => {
             const isHoveredBombRange = isBombMode && 
@@ -191,7 +226,7 @@ export default function PuzzleBoard({ onBack, userId }) {
             return (
               <div
                 key={`${y}-${x}`}
-                onClick={() => handleBlockClick(x, y)}
+                onClick={(e) => handleBlockClick(e, x, y)} // 👈 eを渡す
                 onMouseEnter={() => isBombMode && setHoveredBlock({ x, y })}
                 onMouseLeave={() => isBombMode && setHoveredBlock({ x: -1, y: -1 })}
                 style={{
@@ -250,6 +285,7 @@ export default function PuzzleBoard({ onBack, userId }) {
   );
 }
 
+// stylesオブジェクトは既存のまま変更なし
 const styles = {
   screenContainer: {
     backgroundColor: '#0a0e17', color: '#f1f2f6', fontFamily: 'sans-serif',
