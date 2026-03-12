@@ -15,11 +15,19 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
       overflow: 'hidden'
     }}>
       
-      {/* ★ 左上のプロフィールボタン */}
-      <button className="btn-profile" onClick={() => onNavigate('profile')}>
-        <span style={{ fontSize: '0.8em', marginRight: '5px' }}>ID:</span>
-        {currentUser?.id || "GUEST"}
-      </button>
+      {/* ★ 修正：左上のメニューをまとめるコンテナを作成しました */}
+      <div className="left-menu-container">
+        {/* プロフィールボタン */}
+        <button className="btn-side" onClick={() => onNavigate('profile')}>
+          <span style={{ fontSize: '0.8em', marginRight: '5px' }}>ID:</span>
+          {currentUser?.id || "GUEST"}
+        </button>
+
+        {/* フレンドボタン（同じデザインで下に配置） */}
+        <button className="btn-side" onClick={() => onNavigate('friends')}>
+          [ FRIEND ]
+        </button>
+      </div>
       
       {/* --- 右上のシステム操作エリア --- */}
       <div style={{
@@ -63,13 +71,13 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', alignItems: 'center' }}>
-          {/* メインボタン：幅を 480px に拡大 */}
+          {/* メインボタン */}
           <button className="btn-cyber-main" onClick={() => onNavigate('timer')}>
             [ 01. START MISSION ]
           </button>
           
           <div style={{ display: 'flex', gap: '20px' }}>
-            {/* サブボタン：文字が収まるように幅を 230px に拡大 */}
+            {/* サブボタン */}
             <button className="btn-cyber-sub" onClick={() => onNavigate('game')}>
               [ 02. PLAY PUZZLE ]
             </button>
@@ -82,29 +90,39 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
 
       {/* --- CSS設定 --- */}
       <style>{`
-        /* ★ プロフィールボタンのデザイン */
-        .btn-profile {
+        /* ★ 追加：左上メニューの位置を固定するコンテナ */
+        .left-menu-container {
           position: absolute;
           top: 30px;
           left: 40px;
+          display: flex;
+          flex-direction: column;
+          gap: 15px; /* ボタン同士の隙間 */
+        }
+
+        /* ★ 修正：プロフィール・フレンド共通のデザイン（btn-sideに変更） */
+        .btn-side {
           background: rgba(15, 23, 42, 0.5);
           color: ${accentColor};
           border: 1px solid rgba(56, 189, 248, 0.3);
           border-radius: 4px;
           font-family: 'Courier New', monospace;
-          font-size: 18px;
+          font-size: 16px;
           font-weight: bold;
           cursor: pointer;
           transition: all 0.3s ease;
           padding: 10px 20px;
           letter-spacing: 0.1em;
           backdrop-filter: blur(5px);
+          min-width: 140px; /* 2つのボタンの幅をピシッと揃える */
+          text-align: center;
         }
-        .btn-profile:hover {
+        .btn-side:hover {
           background: rgba(56, 189, 248, 0.1);
           color: white;
           box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
           border-color: ${accentColor};
+          transform: translateX(5px); /* ホバー時に少し右にスライドする演出 */
         }
 
         .btn-logout {
@@ -124,19 +142,19 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
         }
 
         .btn-cyber-main {
-          width: 480px; /* 大幅にサイズアップ */
+          width: 480px;
           padding: 25px;
           background: transparent;
           color: ${accentColor};
           border: 2px solid ${accentColor};
           font-family: 'Courier New', monospace;
-          font-size: 24px; /* 文字も少し大きく */
+          font-size: 24px;
           font-weight: 900;
           cursor: pointer;
           transition: all 0.3s;
           letter-spacing: 0.15em;
           box-shadow: 0 0 20px ${accentColor}44;
-          white-space: nowrap; /* 絶対に改行させない */
+          white-space: nowrap;
         }
         .btn-cyber-main:hover {
           background: ${accentColor};
@@ -146,7 +164,7 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
         }
 
         .btn-cyber-sub {
-          width: 230px; /* 文字が1行で収まるサイズに調整 */
+          width: 230px;
           padding: 18px;
           background: rgba(30, 41, 59, 0.5);
           color: white;
@@ -156,7 +174,7 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
           font-weight: bold;
           cursor: pointer;
           transition: all 0.3s;
-          white-space: nowrap; /* 絶対に改行させない */
+          white-space: nowrap;
           letter-spacing: 0.05em;
         }
         .btn-cyber-sub:hover {
