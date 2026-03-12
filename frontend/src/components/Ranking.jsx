@@ -4,10 +4,14 @@ export default function Ranking({ onBack, currentUser }) {
   const [rankingData, setRankingData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ★ モーダル（小窓）用の状態管理
+  const [selectedUser, setSelectedUser] = useState(null); // クリックされたユーザーID
+  const [modalProfileData, setModalProfileData] = useState({ study_minutes: 0, bomb_count: 0 });
+  const [isModalLoading, setIsModalLoading] = useState(false);
+
   const API_BASE = "http://127.0.0.1:5000";
   const accentColor = '#38bdf8';
 
-  // ★ useEffectより上に移動して、確実に読み込まれるようにしました
   const loadDummyData = () => {
     setRankingData([
       { rank: 1, user_id: 'cyber_ninja', score: 99999 },
@@ -26,11 +30,9 @@ export default function Ranking({ onBack, currentUser }) {
           const data = await response.json();
           const fetchedData = data.ranking || data;
           
-          // ★ 修正ポイント：通信成功してもデータが0件だったらダミーを表示する
           if (fetchedData && fetchedData.length > 0) {
             setRankingData(fetchedData);
           } else {
-            console.log("データが空のため、ダミーデータを表示します");
             loadDummyData();
           }
         } else {
@@ -47,6 +49,47 @@ export default function Ranking({ onBack, currentUser }) {
     fetchRanking();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ★ ユーザー名がクリックされたときの処理
+  const handleUserClick = async (userId) => {
+    setSelectedUser(userId); // モーダルを開く
+    setIsModalLoading(true);
+
+    try {
+      // クリックしたユーザーのIDでAPIを叩く
+      const response = await fetch(`${API_BASE}/api/user/profile?user_id=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setModalProfileData({
+          study_minutes: data.study_minutes || 0,
+          bomb_count: data.bomb_count || 0
+        });
+      } else {
+        loadModalDummyData(userId);
+      }
+    } catch (error) {
+      console.error("プロフィール取得エラー:", error);
+      loadModalDummyData(userId);
+    } finally {
+      setIsModalLoading(false);
+    }
+  };
+
+  // ★ モーダル用のダミーデータ（APIがない時用）
+  const loadModalDummyData = (userId) => {
+    // ユーザーによって適当に違う数字を出す小技
+    const randomTime = Math.floor(Math.random() * 500) + 50; 
+    const randomBomb = Math.floor(Math.random() * 10) + 1;
+    setModalProfileData({
+      study_minutes: randomTime,
+      bomb_count: randomBomb
+    });
+  };
+
+  // ★ モーダルを閉じる処理
+  const closeModal = () => {
+    setSelectedUser(null);
+  };
 
   return (
     <div className="container theme-home" style={{
@@ -80,20 +123,17 @@ export default function Ranking({ onBack, currentUser }) {
 
       {/* ランキングボード */}
       <div className="ranking-board">
-        {/* テーブルヘッダー */}
         <div className="ranking-header">
           <div className="col-rank">RANK</div>
           <div className="col-name">USER_ID</div>
           <div className="col-score">SCORE</div>
         </div>
 
-        {/* ローディング表示 */}
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '50px', color: accentColor, fontFamily: 'monospace' }}>
             [ LOADING DATA... ]
           </div>
         ) : (
-          /* ランキングリスト */
           <div className="ranking-list">
             {rankingData.map((player, index) => {
               const isMe = player.user_id === currentUser?.id;
@@ -108,9 +148,16 @@ export default function Ranking({ onBack, currentUser }) {
                   <div className="col-rank" style={{ color: rankColor, textShadow: rankShadow, fontSize: '1.2rem', fontWeight: 'bold' }}>
                     {player.rank < 10 ? `0${player.rank}` : player.rank}
                   </div>
-                  <div className="col-name" style={{ color: isMe ? '#020617' : 'white' }}>
+                  
+                  {/* ★ 名前部分を clickable に変更！ */}
+                  <div 
+                    className="col-name name-clickable" 
+                    onClick={() => handleUserClick(player.user_id)}
+                    style={{ color: isMe ? '#020617' : 'white' }}
+                  >
                     {player.user_id} {isMe && <span style={{ fontSize: '0.8rem', marginLeft: '10px' }}>[YOU]</span>}
                   </div>
+                  
                   <div className="col-score" style={{ color: isMe ? '#020617' : accentColor, fontWeight: 'bold' }}>
                     {player.score.toLocaleString()}
                   </div>
@@ -121,8 +168,43 @@ export default function Ranking({ onBack, currentUser }) {
         )}
       </div>
 
+      {/* ★ ここから：プロフィールを表示する小窓（モーダル） */}
+      {selectedUser && (
+        <div className="modal-overlay" onClick={closeModal}>
+          {/* 中身をクリックしても閉じないように e.stopPropagation() を入れる */}
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="btn-modal-close" onClick={closeModal}>[ X ]</button>
+            
+            <h2 style={{ color: accentColor, margin: '0 0 20px 0', borderBottom: `1px solid ${accentColor}55`, paddingBottom: '10px' }}>
+              _USER_DATA
+            </h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>ID:</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{selectedUser}</div>
+            </div>
+
+            {isModalLoading ? (
+              <div style={{ color: accentColor, textAlign: 'center', padding: '20px 0' }}>[ SEARCHING... ]</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <div className="modal-stat-box">
+                  <span className="stat-label">TOTAL_FOCUS</span>
+                  <span className="stat-value" style={{ color: '#2ed573' }}>{modalProfileData.study_minutes} <span style={{fontSize:'0.8rem'}}>MIN</span></span>
+                </div>
+                <div className="modal-stat-box">
+                  <span className="stat-label">BOMB_STOCK</span>
+                  <span className="stat-value" style={{ color: '#ff4757' }}>{modalProfileData.bomb_count} <span style={{fontSize:'0.8rem'}}>UNITS</span></span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* --- CSS設定 --- */}
       <style>{`
+        /* ...既存のCSSはそのまま維持... */
         .btn-back {
           position: absolute;
           top: 30px;
@@ -199,6 +281,83 @@ export default function Ranking({ onBack, currentUser }) {
         .col-rank { width: 15%; text-align: center; }
         .col-name { width: 55%; text-align: left; padding-left: 20px; }
         .col-score { width: 30%; text-align: right; font-size: 1.2rem; }
+
+        /* ★ 追加：クリックできる名前のホバー演出 */
+        .name-clickable {
+          cursor: pointer;
+          transition: color 0.2s, text-shadow 0.2s;
+        }
+        .ranking-row:not(.is-me) .name-clickable:hover {
+          color: ${accentColor} !important;
+          text-shadow: 0 0 8px ${accentColor};
+          text-decoration: underline;
+        }
+
+        /* ★ 追加：モーダル（小窓）のCSS */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(2, 6, 23, 0.8); /* 暗い背景 */
+          backdrop-filter: blur(5px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000; /* 一番手前に表示 */
+        }
+
+        .modal-content {
+          background: rgba(15, 23, 42, 0.95);
+          border: 1px solid ${accentColor};
+          box-shadow: 0 0 30px rgba(56, 189, 248, 0.4);
+          padding: 30px;
+          width: 350px;
+          border-radius: 4px;
+          position: relative;
+          color: white;
+          font-family: 'Courier New', monospace;
+          animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-modal-close {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          background: transparent;
+          color: rgba(255,255,255,0.5);
+          border: none;
+          cursor: pointer;
+          font-family: monospace;
+          font-size: 16px;
+          transition: 0.2s;
+        }
+        .btn-modal-close:hover {
+          color: #ff4757;
+        }
+
+        .modal-stat-box {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: rgba(255,255,255,0.05);
+          padding: 10px 15px;
+          border-radius: 4px;
+        }
+        .stat-label {
+          font-size: 12px;
+          color: rgba(255,255,255,0.7);
+        }
+        .stat-value {
+          font-size: 1.2rem;
+          font-weight: bold;
+        }
       `}</style>
     </div>
   );
