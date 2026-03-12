@@ -303,5 +303,44 @@ def get_friends():
         "pending_requests": pending_requests
     })
 
+# ⑪ ボム消費API (POST)
+@app.route('/api/game/use_bomb', methods=['POST'])
+def use_bomb():
+    data = request.get_json()
+    user_id = data.get('user_id')
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_idは必須です"}), 400
+
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # 現在のボムの数を確認
+    c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
+    user = c.fetchone()
+
+    # ボムを持っていない場合はエラーを返す
+    if not user or user['bomb_count'] <= 0:
+        conn.close()
+        return jsonify({"status": "error", "message": "ボムが足りません"}), 400
+
+    # ボムを1つ減らす (NULL対策済み)
+    c.execute('''
+        UPDATE users 
+        SET bomb_count = COALESCE(bomb_count, 0) - 1 
+        WHERE id = ?
+    ''', (user_id,))
+    conn.commit()
+
+    c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
+    updated_user = c.fetchone()
+    conn.close()
+
+    return jsonify({
+        "status": "success",
+        "message": "ボムを1つ消費しました",
+        "remaining_bombs": updated_user['bomb_count']
+    })
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
