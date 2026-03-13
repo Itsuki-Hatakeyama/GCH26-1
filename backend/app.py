@@ -407,7 +407,7 @@ def get_daily_mission():
 
     conn.close()
 
-    target_minutes = 60  # ★デイリーミッションの目標時間（ここは自由に変更OK！）
+    target_minutes = 100  # ★デイリーミッションの目標時間（ここは自由に変更OK！）
 
     return jsonify({
         "status": "success",
@@ -438,7 +438,7 @@ def claim_daily_reward():
     row = c.fetchone()
     today_minutes = row['today_minutes'] if row['today_minutes'] else 0
 
-    target_minutes = 60
+    target_minutes = 100  # デイリーミッションの目標時間（ここは先ほどと同じ値にすること！）
 
     if today_minutes < target_minutes:
         conn.close()
