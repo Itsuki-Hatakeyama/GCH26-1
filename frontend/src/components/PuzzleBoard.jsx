@@ -211,17 +211,24 @@ export default function PuzzleBoard({ onBack, userId }) {
       const clickY = rect.top + rect.height / 2;
 
       if (wasBombAction) {
-        playSound('bomb'); 
-        shakeScreen(true); 
-        particleEngine.emit(clickX, clickY, targetColor, true); 
+        playSound('bomb'); // 💥 爆発音
+        shakeScreen(true); // 💥 激しい画面揺れ
+        particleEngine.emit(clickX, clickY, targetColor, true); // 💥 大爆発エフェクト
+
+        // ボムの時はド派手に「+〇」と出す （earnedScoreを表示してもいいかも）
+        particleEngine.emitText(clickX, clickY, `+${removedCount}`, '#ffffff', true); 
+
       } else {
+        // コンボ数に応じて音を高くするピッチアップ処理
         playSound('pop', comboCount);
-        shakeScreen(false); 
-        particleEngine.emit(clickX, clickY, targetColor, false); 
+        shakeScreen(false); // ✨ 軽い画面揺れ
+        particleEngine.emit(clickX, clickY, targetColor, false); // ✨ 星が弾けるエフェクト
+        // 通常は「〇」と消した数だけを出す
+        particleEngine.emitText(clickX, clickY, `${removedCount}`, targetColor, false); 
       }
 
+      // 既存の盤面更新と落下処理
       setBoard(resultBoard);
-
       setComboCount(prev => prev + 1);
       if (comboTimerRef.current) {
         clearTimeout(comboTimerRef.current);
