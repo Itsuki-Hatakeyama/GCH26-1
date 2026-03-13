@@ -1,3 +1,6 @@
+/* フォントを読み込む　src/index.css の一番上に追加 */
+@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&display=swap');
+
 /* ==========================================
    タイマー画面（完成版）
    ========================================== */
