@@ -215,7 +215,7 @@ export default function PuzzleBoard({ onBack, userId }) {
         shakeScreen(true); 
         particleEngine.emit(clickX, clickY, targetColor, true); 
       } else {
-        playSound('pop'); 
+        playSound('pop', comboCount);
         shakeScreen(false); 
         particleEngine.emit(clickX, clickY, targetColor, false); 
       }
