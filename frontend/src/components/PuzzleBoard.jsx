@@ -255,6 +255,13 @@ export default function PuzzleBoard({ onBack, userId }) {
   return (
     <div className="puzzle-screen game-container" style={styles.screenContainer}>
 
+      {/* Google Fonts「VT323」（楽しいフォント）の読み込み */}
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+        `}
+      </style>
+
       {/* Google Fontsの読み込み */}
       <style>
         {`@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');`}
