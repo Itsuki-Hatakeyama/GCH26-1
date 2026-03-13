@@ -1,3 +1,45 @@
+// src/effects/particles.js
+
+// 🌟🌟 【追加】テキスト（数字）を浮かび上がらせるクラス 🌟🌟
+class PopupText {
+  constructor(x, y, text, color, isBomb) {
+    this.x = x;
+    this.y = y;
+    this.text = text;
+    this.color = color;
+    
+    // 真上にフワッと浮かぶ速度（ボムの時は少し速く）
+    this.vy = isBomb ? -3 : -2;
+    // 寿命 (1.0 -> 0.0で消滅)
+    this.life = 1.0; 
+    // 消えるスピード
+    this.decay = Math.random() * 0.01 + 0.01; 
+  }
+
+  update() {
+    this.y += this.vy; // 上に移動
+    this.life -= this.decay; // 寿命を減らす
+  }
+
+  draw(ctx) {
+    ctx.globalAlpha = Math.max(0, this.life); // 透明度
+    ctx.fillStyle = this.color;
+    
+    // 🌟 グロー（発光）効果
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = this.color;
+    
+    // 🌟 フォントの設定（VT323をCanvasに適用）
+    // サイズは消した数に応じて大きくしても面白いですが、一旦固定で
+    ctx.font = '40px "VT323", cursive'; 
+    ctx.textAlign = 'center'; // 中央揃え
+    ctx.textBaseline = 'middle'; // 上下中央揃え
+    
+    // テキストの描画
+    ctx.fillText(this.text, this.x, this.y);
+  }
+}
+
 class Particle {
   constructor(x, y, color, isBomb) {
     this.x = x;
@@ -38,6 +80,8 @@ class Particle {
 class ParticleSystem {
   constructor() {
     this.particles = [];
+    // 🌟🌟 【追加】浮かび上がるテキストを管理する配列 🌟🌟
+    this.popups = []; 
     this.isInitialized = false;
   }
 
@@ -80,26 +124,49 @@ class ParticleSystem {
     }
   }
 
+  // 🌟🌟 【追加】テキスト（数字）を浮かび上がらせる関数 🌟🌟
+  emitText(x, y, text, color, isBomb = false) {
+    this.popups.push(new PopupText(x, y, text, color, isBomb));
+    
+    // 🌟 ボムの時は特別にテキスト自体からもパーティクルを出すとリッチ
+    if (isBomb) {
+      for (let i = 0; i < 20; i++) {
+        this.particles.push(new Particle(x, y, '#ffffff', false)); // 白い小さな火花
+      }
+    }
+  }
+
   loop() {
     requestAnimationFrame(() => this.loop());
     if (!this.ctx) return;
 
-    // ❌ 修正前
-    // this.ctx.globalCompositeOperation = 'source-over';
-    // this.ctx.fillStyle = 'rgba(10, 14, 23, 0.3)';
-    // this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-    // ⭕ 修正後
+    // Canvasをクリア（透明にする）
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    this.ctx.globalCompositeOperation = 'lighter'; // 加算合成で光らせる
+    // 🌟 加算合成（重なった部分が白く飛ぶ）
+    this.ctx.globalCompositeOperation = 'lighter';
     
+    // 1. パーティクルの更新と描画
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.update();
       p.draw(this.ctx);
       if (p.life <= 0 || p.size <= 0.1) {
         this.particles.splice(i, 1);
+      }
+    }
+    
+    // 🌟🌟 【追加】2. テキスト（ポップアップ）の更新と描画 🌟🌟
+    // Canvasの設定を一度リセット（影などの設定をPopupTextのdraw内で改めて行うため）
+    this.ctx.shadowBlur = 0;
+    this.ctx.shadowColor = 'transparent';
+    
+    for (let i = this.popups.length - 1; i >= 0; i--) {
+      const p = this.popups[i];
+      p.update();
+      p.draw(this.ctx);
+      if (p.life <= 0) {
+        this.popups.splice(i, 1);
       }
     }
   }
