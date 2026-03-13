@@ -1,20 +1,17 @@
 // src/effects/audio.js
 
-// ブラウザのWeb Audio APIを使って、ファイル無しで音を合成する準備
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 
-export const playSound = (type) => {
-  // ユーザーがクリックするまでAudioContextは作れないルールがあるため、ここで初期化
+// 🌟 変更：第2引数に combo = 0 を追加
+export const playSound = (type, combo = 0) => {
   if (!audioCtx) {
     audioCtx = new AudioContext();
   }
-  // ブラウザの制限で一時停止されている場合は再開する
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
   }
 
-  // 音の波と音量を作る
   const oscillator = audioCtx.createOscillator();
   const gainNode = audioCtx.createGain();
 
@@ -24,25 +21,27 @@ export const playSound = (type) => {
   const now = audioCtx.currentTime;
 
   if (type === 'pop') {
-    // 🌟 通常ブロック消去：「ピコッ！」という軽快な音
-    oscillator.type = 'sine'; // 丸い波形
-    oscillator.frequency.setValueAtTime(600, now); // 高めの音から
-    oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.1); // さらに高く跳ね上がる
+    // 🌟 コンボ数に応じてベースの音を高くする（1コンボにつき +100Hz）
+    // 例: 0コンボ=600Hz, 3コンボ=900Hz, 最大1500Hzまで
+    const baseFreq = Math.min(600 + (combo * 100), 1500); 
+
+    oscillator.type = 'sine'; 
+    oscillator.frequency.setValueAtTime(baseFreq, now); 
+    oscillator.frequency.exponentialRampToValueAtTime(baseFreq * 2, now + 0.1); 
     
-    gainNode.gain.setValueAtTime(0.3, now); // 音量
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1); // すぐに小さくする
+    gainNode.gain.setValueAtTime(0.3, now); 
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1); 
     
     oscillator.start(now);
     oscillator.stop(now + 0.1);
 
   } else if (type === 'bomb') {
-    // 💣 ボム使用：「ドゥーン！」という重い爆発音
-    oscillator.type = 'square'; // 荒々しい波形
-    oscillator.frequency.setValueAtTime(150, now); // 低音から
-    oscillator.frequency.exponentialRampToValueAtTime(20, now + 0.5); // さらに低く沈む
+    oscillator.type = 'square'; 
+    oscillator.frequency.setValueAtTime(150, now); 
+    oscillator.frequency.exponentialRampToValueAtTime(20, now + 0.5); 
     
-    gainNode.gain.setValueAtTime(0.4, now); // 音量
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5); // 余韻を残して消える
+    gainNode.gain.setValueAtTime(0.4, now); 
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5); 
     
     oscillator.start(now);
     oscillator.stop(now + 0.5);
