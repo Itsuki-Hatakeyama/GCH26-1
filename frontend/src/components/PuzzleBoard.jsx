@@ -404,10 +404,20 @@ const styles = {
   scoreText: { fontSize: '28px', fontWeight: 'bold', color: '#1e90ff', textShadow: '0 0 5px rgba(30, 144, 255, 0.7)' },
   bombText: { fontSize: '28px', fontWeight: 'bold', color: '#f1f2f6', textShadow: '0 0 5px rgba(241, 242, 246, 0.7)' },
   
+  // PuzzleBoard.jsx の styles の一部を変更
   comboContainer: { display: 'flex', alignItems: 'baseline', gap: '8px' },
-  comboText: { fontSize: '24px', fontWeight: 'bold', color: '#ffa502', textShadow: '0 0 8px rgba(255, 165, 2, 0.8)' },
-  multiplierText: { fontSize: '22px', fontWeight: 'bold', color: '#ff4757', textShadow: '0 0 8px rgba(255, 71, 87, 0.8)' },
-
+  comboText: { 
+    fontFamily: '"Bungee", cursive', // アーケード風極太フォント
+    fontSize: '32px', 
+    color: '#ffa502', 
+    textShadow: '0 0 10px rgba(255, 165, 2, 0.9), 2px 2px 0px #b33939' // 影を濃くして立体感を出す
+  },
+  multiplierText: { 
+    fontFamily: '"Bungee", cursive', 
+    fontSize: '28px', 
+    color: '#ff4757', 
+    textShadow: '0 0 10px rgba(255, 71, 87, 0.9), 2px 2px 0px #b33939' 
+  },
   boardPanel: {
     padding: '15px', backgroundColor: 'rgba(0, 0, 0, 0.5)', 
     borderRadius: '16px', border: '3px solid #1e90ff', 
