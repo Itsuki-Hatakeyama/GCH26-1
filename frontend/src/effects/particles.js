@@ -30,11 +30,13 @@ class PopupText {
     ctx.shadowColor = this.color;
     
     // 🌟 フォントの設定（VT323をCanvasに適用）
-    // サイズは消した数に応じて大きくしても面白いですが、一旦固定で
-    ctx.font = '40px "VT323", cursive'; 
+    // サイズを消した数に応じて、大きく変化させる
+    const baseSize = 40;
+    const numericText = Number(this.text) || 0;
+    const size = baseSize + Math.min(numericText * 8, 100); // 変化量と最大サイズを拡大
+    ctx.font = `${size}px "VT323", cursive`;
     ctx.textAlign = 'center'; // 中央揃え
     ctx.textBaseline = 'middle'; // 上下中央揃え
-    
     // テキストの描画
     ctx.fillText(this.text, this.x, this.y);
   }
