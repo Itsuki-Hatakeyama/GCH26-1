@@ -254,6 +254,11 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   return (
     <div className="puzzle-screen game-container" style={styles.screenContainer}>
+
+      {/* Google Fontsの読み込み */}
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');`}
+      </style>
       
       <div onClick={onBack} style={styles.backButton}>← HOME</div>
 
