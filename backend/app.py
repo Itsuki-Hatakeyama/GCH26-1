@@ -375,5 +375,96 @@ def use_bomb():
         "remaining_bombs": updated_user['bomb_count']
     })
 
+# ==========================================
+# 5. ミッション機能 (Missions API)
+# ==========================================
+
+# ⑫ デイリーミッション進捗確認API (GET)
+@app.route('/api/missions/daily', methods=['GET'])
+def get_daily_mission():
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_idは必須です"}), 400
+
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # ① 今日の合計勉強時間を計算 (SQLiteの機能で今日の日付を判定)
+    c.execute('''
+        SELECT SUM(study_minutes) as today_minutes 
+        FROM study_logs 
+        WHERE user_id = ? AND date(created_at, 'localtime') = date('now', 'localtime')
+    ''', (user_id,))
+    row = c.fetchone()
+    today_minutes = row['today_minutes'] if row['today_minutes'] else 0
+
+    # ② 今日すでに報酬を受け取っているか確認
+    c.execute('''
+        SELECT * FROM daily_rewards 
+        WHERE user_id = ? AND reward_date = date('now', 'localtime')
+    ''', (user_id,))
+    is_claimed = c.fetchone() is not None
+
+    conn.close()
+
+    target_minutes = 60  # ★デイリーミッションの目標時間（ここは自由に変更OK！）
+
+    return jsonify({
+        "status": "success",
+        "today_minutes": today_minutes,
+        "target_minutes": target_minutes,
+        "is_cleared": today_minutes >= target_minutes, # 目標達成しているか(True/False)
+        "is_claimed": is_claimed                       # 受け取り済みか(True/False)
+    })
+
+# ⑬ デイリーミッション報酬受け取りAPI (POST)
+@app.route('/api/missions/claim', methods=['POST'])
+def claim_daily_reward():
+    data = request.get_json()
+    user_id = data.get('user_id')
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_idは必須です"}), 400
+
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # ① 今日の勉強時間を再確認（不正アクセス防止）
+    c.execute('''
+        SELECT SUM(study_minutes) as today_minutes 
+        FROM study_logs 
+        WHERE user_id = ? AND date(created_at, 'localtime') = date('now', 'localtime')
+    ''', (user_id,))
+    row = c.fetchone()
+    today_minutes = row['today_minutes'] if row['today_minutes'] else 0
+
+    target_minutes = 60
+
+    if today_minutes < target_minutes:
+        conn.close()
+        return jsonify({"status": "error", "message": "まだミッションをクリアしていません"}), 400
+
+    try:
+        # ② 報酬履歴に「今日受け取ったよ」と記録する
+        c.execute('''
+            INSERT INTO daily_rewards (user_id, reward_date) 
+            VALUES (?, date('now', 'localtime'))
+        ''', (user_id,))
+        
+        # ③ ボムを1個増やす！
+        c.execute('''
+            UPDATE users 
+            SET bomb_count = COALESCE(bomb_count, 0) + 1 
+            WHERE id = ?
+        ''', (user_id,))
+        
+        conn.commit()
+        return jsonify({"status": "success", "message": "デイリーミッション達成！ボムを獲得しました！"}), 200
+    except sqlite3.IntegrityError:
+        # すでに今日の記録がある場合（2回押された場合など）
+        return jsonify({"status": "error", "message": "今日の報酬はすでに受け取り済みです"}), 409
+    finally:
+        conn.close()
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

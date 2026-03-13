@@ -55,6 +55,15 @@ def init_db():
         )
     ''')
 
+    # daily_rewards テーブルの作成（新規追加：タスク③ デイリー報酬の受け取り履歴）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS daily_rewards (
+            user_id TEXT,
+            reward_date TEXT, -- 'YYYY-MM-DD' の形式で保存
+            PRIMARY KEY (user_id, reward_date)
+        )
+    ''')
+
     # 開発テスト用に、初期ユーザーを1人登録しておく（パスワードはハッシュ化して保存）
     test_password = generate_password_hash("password123")
     c.execute('INSERT OR IGNORE INTO users (id, password, study_minutes, bomb_count) VALUES (?, ?, 0, 0)', ("user_123", test_password))
