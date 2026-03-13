@@ -65,12 +65,14 @@ def login_user():
 # 2. ユーザー＆アイテム機能 (User API)
 # ==========================================
 
-# ポモドーロ完了通知（ボムと勉強時間を追加）
+# ポモドーロ完了通知（ボムと勉強時間を追加＋教材ごとの記録）
 @app.route('/api/pomodoro/finish', methods=['POST'])
 def finish_pomodoro():
     data = request.get_json()
     user_id = data.get('user_id')
     study_minutes = data.get('study_minutes', 25)
+    # ★追加：フロントから「教材名」も受け取る（無ければ「その他」にする）
+    subject_name = data.get('subject_name', 'その他')
 
     if not user_id:
         return jsonify({"status": "error", "message": "user_idは必須です"}), 400
@@ -85,13 +87,20 @@ def finish_pomodoro():
         conn.close()
         return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
 
-    # ★NULL対策(COALESCE)を施した完璧なUPDATE文
+    # 1. 今まで通り、usersテーブルの累計時間とボムを増やす
     c.execute('''
         UPDATE users 
         SET study_minutes = COALESCE(study_minutes, 0) + ?, 
             bomb_count = COALESCE(bomb_count, 0) + ?
         WHERE id = ?
     ''', (study_minutes, 1, user_id))
+    
+    # ★追加：2. study_logsテーブルに「何を何分勉強したか」を記録する
+    c.execute('''
+        INSERT INTO study_logs (user_id, subject_name, study_minutes)
+        VALUES (?, ?, ?)
+    ''', (user_id, subject_name, study_minutes))
+
     conn.commit()
 
     c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
@@ -126,7 +135,7 @@ def get_inventory():
         "items": {"bomb": bomb_count}
     })
 
-# プロフィール情報（累計勉強時間とボム）の取得
+# プロフィール情報（累計、ボム、ハイスコア、教材別データ）の取得
 @app.route('/api/user/profile', methods=['GET'])
 def get_profile():
     user_id = request.args.get('user_id')
@@ -136,19 +145,43 @@ def get_profile():
 
     conn = get_db_connection()
     c = conn.cursor()
+    
+    # 1. ユーザーの基本情報（累計時間とボム）
     c.execute('SELECT study_minutes, bomb_count FROM users WHERE id = ?', (user_id,))
     user = c.fetchone()
+
+    if not user:
+        conn.close()
+        return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
+
+    # ★タスク①：2. これまでのハイスコアを取得
+    c.execute('SELECT MAX(score) as max_score FROM scores WHERE user_id = ?', (user_id,))
+    score_record = c.fetchone()
+    high_score = score_record['max_score'] if score_record['max_score'] else 0
+
+    # ★タスク②：3. 教材(subject_name)ごとの合計勉強時間を取得（グラフ用）
+    c.execute('''
+        SELECT subject_name, SUM(study_minutes) as total_minutes
+        FROM study_logs
+        WHERE user_id = ?
+        GROUP BY subject_name
+        ORDER BY total_minutes DESC
+    ''', (user_id,))
+    logs = c.fetchall()
+    
+    # フロントが扱いやすいようにリスト形式に変換
+    study_stats = [{"subject": row["subject_name"], "minutes": row["total_minutes"]} for row in logs]
+
     conn.close()
 
-    if user:
-        return jsonify({
-            "status": "success",
-            "user_id": user_id,
-            "study_minutes": user['study_minutes'] or 0,
-            "bomb_count": user['bomb_count'] or 0
-        })
-    else:
-        return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
+    return jsonify({
+        "status": "success",
+        "user_id": user_id,
+        "study_minutes": user['study_minutes'] or 0,
+        "bomb_count": user['bomb_count'] or 0,
+        "high_score": high_score,         # 追加！
+        "study_stats": study_stats        # 追加！
+    })
 
 # ==========================================
 # 3. ゲーム＆ランキング機能 (Game API)
