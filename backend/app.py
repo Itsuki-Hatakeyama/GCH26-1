@@ -211,14 +211,17 @@ def submit_score():
         "is_high_score": is_high_score
     })
 
-# ランキング取得（トップ10）
+# ⑦ ランキング取得（トップ10：1人1つの最高スコアのみ！）
 @app.route('/api/game/ranking', methods=['GET'])
 def get_ranking():
     conn = get_db_connection()
     c = conn.cursor()
+    
+    # 🌟 修正：GROUP BY でユーザーをまとめ、MAX() で最高スコアだけを抽出！
     c.execute('''
-        SELECT user_id, score, created_at 
+        SELECT user_id, MAX(score) as score, created_at 
         FROM scores 
+        GROUP BY user_id 
         ORDER BY score DESC 
         LIMIT 10
     ''')
@@ -230,7 +233,7 @@ def get_ranking():
         ranking_list.append({
             "rank": rank,
             "user_id": row["user_id"],
-            "score": row["score"],
+            "score": row["score"], # SQL側で "as score" と名付けたので、今まで通りこれで取れます！
             "date": row["created_at"]
         })
 
