@@ -23,9 +23,6 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60); 
-  // 🌟 追加：残り時間を岩落下タイマーの中で参照するためのRef
-  const timeLeftRef = useRef(timeLeft); 
-  
   const [isGameOver, setIsGameOver] = useState(false);
   const [gameOverReason, setGameOverReason] = useState(""); 
   
@@ -37,17 +34,13 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   const API_BASE = "http://127.0.0.1:5000";
 
-  // タイマーが更新されるたびにRefにも最新の時間を保存する
-  useEffect(() => {
-    timeLeftRef.current = timeLeft;
-  }, [timeLeft]);
-
   useEffect(() => {
     return () => {
       if (comboTimerRef.current) clearTimeout(comboTimerRef.current);
     };
   }, []);
 
+  // 初期化とボム所持数の取得
   useEffect(() => {
     particleEngine.init();
     setBoard(createBoard());
@@ -67,6 +60,7 @@ export default function PuzzleBoard({ onBack, userId }) {
     fetchInventory();
   }, [userId]);
 
+  // ゲームオーバー処理
   const handleGameOver = (reason) => {
     setGameOverReason(reason);
     setIsGameOver(true);
@@ -78,6 +72,7 @@ export default function PuzzleBoard({ onBack, userId }) {
     }).catch(() => {});
   };
 
+  // 盤面に「消せるブロック」が残っているか判定
   const hasAvailableMoves = (currentBoard) => {
     for (let y = 0; y < currentBoard.length; y++) {
       for (let x = 0; x < currentBoard[y].length; x++) {
@@ -91,6 +86,7 @@ export default function PuzzleBoard({ onBack, userId }) {
     return false; 
   };
 
+  // タイマー進行と時間切れ判定
   useEffect(() => {
     if (isGameStarted && timeLeft > 0 && !isGameOver && !isPaused) {
       const timerId = setInterval(() => setTimeLeft((t) => t - 1), 1000);
@@ -100,6 +96,7 @@ export default function PuzzleBoard({ onBack, userId }) {
     }
   }, [isGameStarted, timeLeft, isGameOver, isPaused]);
 
+  // 手詰まり（詰み）の監視
   useEffect(() => {
     if (isGameStarted && !isGameOver && board.length > 0) {
       const canMove = hasAvailableMoves(board);
@@ -109,52 +106,36 @@ export default function PuzzleBoard({ onBack, userId }) {
     }
   }, [board, bombCount, isGameStarted, isGameOver]);
 
-  // 🌟 変更：残り時間に応じて間隔が狭まる岩落下システム
+  // 🌟 一定間隔（4秒）で岩ブロックを降らせる処理
   useEffect(() => {
     if (!isGameStarted || isGameOver || isPaused) return;
 
-    let timeoutId;
+    const ROCK_INTERVAL_MS = 4000; 
 
-    const scheduleNextRock = () => {
-      // 🌟 残り時間（割合）を計算：最初(60秒)は1.0、最後(0秒)は0.0
-      const ratio = Math.max(0, timeLeftRef.current) / 60;
-      
-      // 🌟 落下間隔の計算：最短2000ms（2秒）〜 最長8000ms（8秒）
-      // 残り時間が減る（ratioが小さくなる）ほど、delayが短くなる！
-      const delay = 2000 + (6000 * ratio);
-
-      timeoutId = setTimeout(() => {
-        setBoard(prevBoard => {
-          const newBoard = prevBoard.map(row => row.map(block => ({ ...block })));
-          
-          const validTargets = [];
-          for (let y = 0; y < newBoard.length; y++) {
-            for (let x = 0; x < newBoard[y].length; x++) {
-              if (newBoard[y][x].color >= 1 && newBoard[y][x].color <= 4) {
-                validTargets.push({ x, y });
-              }
+    const rockInterval = setInterval(() => {
+      setBoard(prevBoard => {
+        const newBoard = prevBoard.map(row => row.map(block => ({ ...block })));
+        
+        const validTargets = [];
+        for (let y = 0; y < newBoard.length; y++) {
+          for (let x = 0; x < newBoard[y].length; x++) {
+            if (newBoard[y][x].color >= 1 && newBoard[y][x].color <= 4) {
+              validTargets.push({ x, y });
             }
           }
+        }
 
-          if (validTargets.length > 0) {
-            const rand = validTargets[Math.floor(Math.random() * validTargets.length)];
-            newBoard[rand.y][rand.x].color = 5;
-            playSound('bomb'); // 岩が落ちた音
-            shakeScreen(false); // 軽く揺れる
-          }
-          return newBoard;
-        });
+        if (validTargets.length > 0) {
+          const rand = validTargets[Math.floor(Math.random() * validTargets.length)];
+          newBoard[rand.y][rand.x].color = 5; // 岩ブロック
+          playSound('bomb'); 
+          shakeScreen(false); 
+        }
+        return newBoard;
+      });
+    }, ROCK_INTERVAL_MS);
 
-        // 🌟 終わったら次の岩をセット（徐々に早くなる）
-        scheduleNextRock();
-      }, delay);
-    };
-
-    // ループ開始
-    scheduleNextRock();
-
-    // コンポーネントが消える時やポーズ時は安全に止める
-    return () => clearTimeout(timeoutId);
+    return () => clearInterval(rockInterval);
   }, [isGameStarted, isGameOver, isPaused]);
 
 
@@ -273,12 +254,14 @@ export default function PuzzleBoard({ onBack, userId }) {
         <div style={styles.infoDisplay}>
           <div style={styles.scoreText}>SCORE: {score}</div>
           <div style={styles.bombText}>💣: {bombCount}</div>
-          {comboCount > 0 && (
-            <div style={styles.comboContainer}>
-              <span style={styles.comboText}>{comboCount} COMBO!! 🔥</span>
-              <span style={styles.multiplierText}>×{currentMultiplier}</span>
-            </div>
-          )}
+          {/* 🌟 修正ポイント：&& を消して visibility で表示・非表示を切り替える */}
+          <div style={{
+            ...styles.comboContainer,
+            visibility: comboCount > 0 ? 'visible' : 'hidden'
+          }}>
+            <span style={styles.comboText}>{comboCount} COMBO!! 🔥</span>
+            <span style={styles.multiplierText}>×{currentMultiplier}</span>
+          </div>
         </div>
       </div>
 
