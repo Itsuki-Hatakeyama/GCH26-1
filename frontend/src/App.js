@@ -9,6 +9,7 @@ import PuzzleBoard from './components/PuzzleBoard';
 import Profile from './components/Profile';
 import Friends from './components/Friend'; 
 import Missions from './components/Missions';
+import Guide from './components/Guide'; // ← これを追加
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -68,6 +69,10 @@ function App() {
 
   if (view === 'missions') {
     return <Missions onBack={() => setView('home')} currentUser={currentUser} />;
+  }
+  
+  if (view === 'guide') {
+    return <Guide onBack={() => setView('home')} />;
   }
 
   return null;
