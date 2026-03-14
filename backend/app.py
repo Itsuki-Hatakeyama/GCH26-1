@@ -65,12 +65,14 @@ def login_user():
 # 2. ユーザー＆アイテム機能 (User API)
 # ==========================================
 
-# ポモドーロ完了通知（ボムと勉強時間を追加）
+# ポモドーロ完了通知（ボムと勉強時間を追加＋教材ごとの記録）
 @app.route('/api/pomodoro/finish', methods=['POST'])
 def finish_pomodoro():
     data = request.get_json()
     user_id = data.get('user_id')
     study_minutes = data.get('study_minutes', 25)
+    # ★追加：フロントから「教材名」も受け取る（無ければ「その他」にする）
+    subject_name = data.get('subject_name', 'その他')
 
     if not user_id:
         return jsonify({"status": "error", "message": "user_idは必須です"}), 400
@@ -85,13 +87,20 @@ def finish_pomodoro():
         conn.close()
         return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
 
-    # ★NULL対策(COALESCE)を施した完璧なUPDATE文
+    # 1. 今まで通り、usersテーブルの累計時間とボムを増やす
     c.execute('''
         UPDATE users 
         SET study_minutes = COALESCE(study_minutes, 0) + ?, 
             bomb_count = COALESCE(bomb_count, 0) + ?
         WHERE id = ?
     ''', (study_minutes, 1, user_id))
+    
+    # ★追加：2. study_logsテーブルに「何を何分勉強したか」を記録する
+    c.execute('''
+        INSERT INTO study_logs (user_id, subject_name, study_minutes)
+        VALUES (?, ?, ?)
+    ''', (user_id, subject_name, study_minutes))
+
     conn.commit()
 
     c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
@@ -126,7 +135,7 @@ def get_inventory():
         "items": {"bomb": bomb_count}
     })
 
-# プロフィール情報（累計勉強時間とボム）の取得
+# プロフィール情報（累計、ボム、ハイスコア、教材別データ）の取得
 @app.route('/api/user/profile', methods=['GET'])
 def get_profile():
     user_id = request.args.get('user_id')
@@ -136,19 +145,43 @@ def get_profile():
 
     conn = get_db_connection()
     c = conn.cursor()
+    
+    # 1. ユーザーの基本情報（累計時間とボム）
     c.execute('SELECT study_minutes, bomb_count FROM users WHERE id = ?', (user_id,))
     user = c.fetchone()
+
+    if not user:
+        conn.close()
+        return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
+
+    # ★タスク①：2. これまでのハイスコアを取得
+    c.execute('SELECT MAX(score) as max_score FROM scores WHERE user_id = ?', (user_id,))
+    score_record = c.fetchone()
+    high_score = score_record['max_score'] if score_record['max_score'] else 0
+
+    # ★タスク②：3. 教材(subject_name)ごとの合計勉強時間を取得（グラフ用）
+    c.execute('''
+        SELECT subject_name, SUM(study_minutes) as total_minutes
+        FROM study_logs
+        WHERE user_id = ?
+        GROUP BY subject_name
+        ORDER BY total_minutes DESC
+    ''', (user_id,))
+    logs = c.fetchall()
+    
+    # フロントが扱いやすいようにリスト形式に変換
+    study_stats = [{"subject": row["subject_name"], "minutes": row["total_minutes"]} for row in logs]
+
     conn.close()
 
-    if user:
-        return jsonify({
-            "status": "success",
-            "user_id": user_id,
-            "study_minutes": user['study_minutes'] or 0,
-            "bomb_count": user['bomb_count'] or 0
-        })
-    else:
-        return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
+    return jsonify({
+        "status": "success",
+        "user_id": user_id,
+        "study_minutes": user['study_minutes'] or 0,
+        "bomb_count": user['bomb_count'] or 0,
+        "high_score": high_score,         # 追加！
+        "study_stats": study_stats        # 追加！
+    })
 
 # ==========================================
 # 3. ゲーム＆ランキング機能 (Game API)
@@ -178,14 +211,17 @@ def submit_score():
         "is_high_score": is_high_score
     })
 
-# ランキング取得（トップ10）
+# ⑦ ランキング取得（トップ10：1人1つの最高スコアのみ！）
 @app.route('/api/game/ranking', methods=['GET'])
 def get_ranking():
     conn = get_db_connection()
     c = conn.cursor()
+    
+    # 🌟 修正：GROUP BY でユーザーをまとめ、MAX() で最高スコアだけを抽出！
     c.execute('''
-        SELECT user_id, score, created_at 
+        SELECT user_id, MAX(score) as score, created_at 
         FROM scores 
+        GROUP BY user_id 
         ORDER BY score DESC 
         LIMIT 10
     ''')
@@ -197,7 +233,7 @@ def get_ranking():
         ranking_list.append({
             "rank": rank,
             "user_id": row["user_id"],
-            "score": row["score"],
+            "score": row["score"], # SQL側で "as score" と名付けたので、今まで通りこれで取れます！
             "date": row["created_at"]
         })
 
@@ -341,6 +377,97 @@ def use_bomb():
         "message": "ボムを1つ消費しました",
         "remaining_bombs": updated_user['bomb_count']
     })
+
+# ==========================================
+# 5. ミッション機能 (Missions API)
+# ==========================================
+
+# ⑫ デイリーミッション進捗確認API (GET)
+@app.route('/api/missions/daily', methods=['GET'])
+def get_daily_mission():
+    user_id = request.args.get('user_id')
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_idは必須です"}), 400
+
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # ① 今日の合計勉強時間を計算 (SQLiteの機能で今日の日付を判定)
+    c.execute('''
+        SELECT SUM(study_minutes) as today_minutes 
+        FROM study_logs 
+        WHERE user_id = ? AND date(created_at, 'localtime') = date('now', 'localtime')
+    ''', (user_id,))
+    row = c.fetchone()
+    today_minutes = row['today_minutes'] if row['today_minutes'] else 0
+
+    # ② 今日すでに報酬を受け取っているか確認
+    c.execute('''
+        SELECT * FROM daily_rewards 
+        WHERE user_id = ? AND reward_date = date('now', 'localtime')
+    ''', (user_id,))
+    is_claimed = c.fetchone() is not None
+
+    conn.close()
+
+    target_minutes = 100  # ★デイリーミッションの目標時間（ここは自由に変更OK！）
+
+    return jsonify({
+        "status": "success",
+        "today_minutes": today_minutes,
+        "target_minutes": target_minutes,
+        "is_cleared": today_minutes >= target_minutes, # 目標達成しているか(True/False)
+        "is_claimed": is_claimed                       # 受け取り済みか(True/False)
+    })
+
+# ⑬ デイリーミッション報酬受け取りAPI (POST)
+@app.route('/api/missions/claim', methods=['POST'])
+def claim_daily_reward():
+    data = request.get_json()
+    user_id = data.get('user_id')
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_idは必須です"}), 400
+
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    # ① 今日の勉強時間を再確認（不正アクセス防止）
+    c.execute('''
+        SELECT SUM(study_minutes) as today_minutes 
+        FROM study_logs 
+        WHERE user_id = ? AND date(created_at, 'localtime') = date('now', 'localtime')
+    ''', (user_id,))
+    row = c.fetchone()
+    today_minutes = row['today_minutes'] if row['today_minutes'] else 0
+
+    target_minutes = 100  # デイリーミッションの目標時間（ここは先ほどと同じ値にすること！）
+
+    if today_minutes < target_minutes:
+        conn.close()
+        return jsonify({"status": "error", "message": "まだミッションをクリアしていません"}), 400
+
+    try:
+        # ② 報酬履歴に「今日受け取ったよ」と記録する
+        c.execute('''
+            INSERT INTO daily_rewards (user_id, reward_date) 
+            VALUES (?, date('now', 'localtime'))
+        ''', (user_id,))
+        
+        # ③ ボムを1個増やす！
+        c.execute('''
+            UPDATE users 
+            SET bomb_count = COALESCE(bomb_count, 0) + 1 
+            WHERE id = ?
+        ''', (user_id,))
+        
+        conn.commit()
+        return jsonify({"status": "success", "message": "デイリーミッション達成！ボムを獲得しました！"}), 200
+    except sqlite3.IntegrityError:
+        # すでに今日の記録がある場合（2回押された場合など）
+        return jsonify({"status": "error", "message": "今日の報酬はすでに受け取り済みです"}), 409
+    finally:
+        conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

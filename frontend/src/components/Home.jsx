@@ -15,15 +15,12 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
       overflow: 'hidden'
     }}>
       
-      {/* ★ 修正：左上のメニューをまとめるコンテナを作成しました */}
+      {/* --- 左上のメニュー --- */}
       <div className="left-menu-container">
-        {/* プロフィールボタン */}
         <button className="btn-side" onClick={() => onNavigate('profile')}>
           <span style={{ fontSize: '0.8em', marginRight: '5px' }}>ID:</span>
           {currentUser?.id || "GUEST"}
         </button>
-
-        {/* フレンドボタン（同じデザインで下に配置） */}
         <button className="btn-side" onClick={() => onNavigate('friends')}>
           [ FRIEND ]
         </button>
@@ -37,14 +34,22 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
-        gap: '5px'
+        gap: '12px'
       }}>
         <div style={{ color: accentColor, fontSize: '12px', fontFamily: 'monospace', opacity: 0.7 }}>
           STATUS: ONLINE // USER: {currentUser?.id}
         </div>
-        <button onClick={onLogout} className="btn-logout">
-          [ LOGOUT ]
-        </button>
+        
+        {/* ★ 修正：HOW TO PLAY のクラスを btn-side に変更し、縦のズレを防ぐため alignItems: 'center' を追加しました */}
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <button onClick={() => onNavigate('guide')} className="btn-side">
+            [ HOW TO PLAY ]
+          </button>
+          
+          <button onClick={onLogout} className="btn-logout">
+            [ LOGOUT ]
+          </button>
+        </div>
       </div>
 
       {/* --- メインコンテンツ --- */}
@@ -54,7 +59,7 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
           lineHeight: '1.1',
           marginBottom: '10px' 
         }}>
-          DRYOKU<br />& PUZZLE
+          PUZZLE<br />& <br />DRYOKU's
         </h1>
         
         <p style={{ 
@@ -71,18 +76,19 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', alignItems: 'center' }}>
-          {/* メインボタン */}
           <button className="btn-cyber-main" onClick={() => onNavigate('timer')}>
             [ 01. START MISSION ]
           </button>
           
           <div style={{ display: 'flex', gap: '20px' }}>
-            {/* サブボタン */}
             <button className="btn-cyber-sub" onClick={() => onNavigate('game')}>
               [ 02. PLAY PUZZLE ]
             </button>
             <button className="btn-cyber-sub" onClick={() => onNavigate('ranking')}>
               [ 03. RANKING ]
+            </button>
+            <button className="btn-cyber-sub" onClick={() => onNavigate('missions')}>
+              [ 04. MISSIONS ]
             </button>
           </div>
         </div>
@@ -90,17 +96,15 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
 
       {/* --- CSS設定 --- */}
       <style>{`
-        /* ★ 追加：左上メニューの位置を固定するコンテナ */
         .left-menu-container {
           position: absolute;
           top: 30px;
           left: 40px;
           display: flex;
           flex-direction: column;
-          gap: 15px; /* ボタン同士の隙間 */
+          gap: 15px;
         }
 
-        /* ★ 修正：プロフィール・フレンド共通のデザイン（btn-sideに変更） */
         .btn-side {
           background: rgba(15, 23, 42, 0.5);
           color: ${accentColor};
@@ -114,7 +118,7 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
           padding: 10px 20px;
           letter-spacing: 0.1em;
           backdrop-filter: blur(5px);
-          min-width: 140px; /* 2つのボタンの幅をピシッと揃える */
+          min-width: 140px;
           text-align: center;
         }
         .btn-side:hover {
@@ -122,7 +126,7 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
           color: white;
           box-shadow: 0 0 15px rgba(56, 189, 248, 0.5);
           border-color: ${accentColor};
-          transform: translateX(5px); /* ホバー時に少し右にスライドする演出 */
+          transform: translateX(5px);
         }
 
         .btn-logout {

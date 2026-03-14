@@ -1,32 +1,40 @@
 import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function Profile({ onBack, currentUser }) {
-  const [profileData, setProfileData] = useState({
-    study_minutes: 0,
-    bomb_count: 0
-  });
+  const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const API_BASE = "http://127.0.0.1:5000";
-  const accentColor = '#38bdf8'; // 空色
+  const accentColor = '#38bdf8';
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // ★ ご友人に /api/user/profile (GET) のようなAPIを作ってもらう想定です！
         const response = await fetch(`${API_BASE}/api/user/profile?user_id=${currentUser.id}`);
         if (response.ok) {
           const data = await response.json();
+          // ★ 確定したAPIのJSONキーに完全に合わせました！
           setProfileData({
-            study_minutes: data.study_minutes || 0,
-            bomb_count: data.bomb_count || 0
+            total_time: data.study_minutes || 0,
+            high_score: data.high_score || 0,
+            bombs: data.bomb_count || 0,
+            study_stats: data.study_stats || [] 
           });
         } else {
-          loadDummyData(); // APIがない・未完成の場合はダミーを表示
+          throw new Error("Network response was not ok");
         }
       } catch (error) {
-        console.error("プロフィール取得エラー:", error);
-        loadDummyData(); // 通信エラー時もダミーを表示
+        console.log("APIエラー。オフライン用のダミーデータを表示します。");
+        setProfileData({
+          total_time: 75,
+          high_score: 15000,
+          bombs: 3,
+          study_stats: [
+            { subject: '英語', minutes: 50 },
+            { subject: '数学', minutes: 25 },
+          ]
+        });
       } finally {
         setIsLoading(false);
       }
@@ -35,109 +43,100 @@ export default function Profile({ onBack, currentUser }) {
     fetchProfile();
   }, [currentUser.id]);
 
-  // API未実装時のダミーデータ
-  const loadDummyData = () => {
-    setProfileData({
-      study_minutes: 125, // 例: 125分
-      bomb_count: 5       // 例: ボム5個
-    });
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{ background: 'rgba(15,23,42,0.9)', border: `1px solid ${accentColor}`, padding: '10px', color: 'white', fontFamily: 'monospace' }}>
+          <p style={{ margin: 0, color: accentColor, fontWeight: 'bold' }}>{label}</p>
+          {/* ★ ツールチップの表示も合わせた */}
+          <p style={{ margin: 0 }}>{payload[0].value} MINS</p> 
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
     <div className="container theme-home" style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      position: 'relative'
+      display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', padding: '50px 20px', position: 'relative'
     }}>
-      
-      {/* 戻るボタン */}
       <button className="btn-back" onClick={onBack}>← HOME</button>
 
-      <h1 style={{ 
-        fontSize: '4rem', 
-        color: 'white', 
-        fontFamily: 'Courier New, monospace',
-        textShadow: `0 0 20px ${accentColor}`,
-        letterSpacing: '0.2em',
-        marginBottom: '40px'
-      }}>
-        AGENT PROFILE
-      </h1>
-
-      {/* ステータスカード */}
-      <div style={{
-        width: '500px',
-        maxWidth: '90%',
-        backgroundColor: 'rgba(15, 23, 42, 0.7)',
-        border: `1px solid ${accentColor}55`,
-        borderRadius: '4px',
-        boxShadow: `0 0 30px rgba(0,0,0,0.5)`,
-        backdropFilter: 'blur(10px)',
-        padding: '50px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '40px'
-      }}>
-        
-        {/* USER ID */}
-        <div>
-          <div style={{ color: accentColor, fontSize: '14px', fontFamily: 'monospace', marginBottom: '8px', letterSpacing: '0.1em' }}>
-            _USER_ID:
-          </div>
-          <div style={{ fontSize: '2.5rem', color: 'white', fontWeight: 'bold', fontFamily: 'Courier New, monospace' }}>
-            {currentUser.id}
-          </div>
-        </div>
-
-        {/* STUDY MINUTES (累計勉強時間) */}
-        <div>
-          <div style={{ color: accentColor, fontSize: '14px', fontFamily: 'monospace', marginBottom: '8px', letterSpacing: '0.1em' }}>
-            _TOTAL_FOCUS_TIME:
-          </div>
-          <div style={{ fontSize: '3rem', color: '#2ed573', fontWeight: 'bold', fontFamily: 'Courier New, monospace', textShadow: '0 0 15px rgba(46, 213, 115, 0.4)' }}>
-            {isLoading ? "---" : profileData.study_minutes} 
-            <span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.5)', textShadow: 'none', marginLeft: '10px' }}>MINUTES</span>
-          </div>
-        </div>
-
-        {/* BOMB COUNT (所持ボム数) */}
-        <div>
-          <div style={{ color: accentColor, fontSize: '14px', fontFamily: 'monospace', marginBottom: '8px', letterSpacing: '0.1em' }}>
-            _BOMB_STOCK:
-          </div>
-          <div style={{ fontSize: '3rem', color: '#ff4757', fontWeight: 'bold', fontFamily: 'Courier New, monospace', textShadow: '0 0 15px rgba(255, 71, 87, 0.4)' }}>
-            {isLoading ? "---" : profileData.bomb_count} 
-            <span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.5)', textShadow: 'none', marginLeft: '10px' }}>UNITS</span>
-          </div>
-        </div>
-
+      <div style={{ textAlign: 'center', marginBottom: '30px', marginTop: '20px' }}>
+        <h1 style={{ fontSize: '3.5rem', color: 'white', fontFamily: 'Courier New, monospace', textShadow: `0 0 20px ${accentColor}`, letterSpacing: '0.2em', margin: '0 0 10px 0' }}>
+          USER_PROFILE
+        </h1>
+        <p style={{ color: accentColor, letterSpacing: '0.4em', fontFamily: 'monospace', margin: 0 }}>
+          {">> ID: "}{currentUser?.id}
+        </p>
       </div>
 
-      {/* --- CSS設定 --- */}
+      {isLoading || !profileData ? (
+        <div style={{ color: accentColor, fontFamily: 'monospace', marginTop: '50px', fontSize: '1.5rem' }}>[ LOADING DATA... ]</div>
+      ) : (
+        <div className="profile-board">
+          
+          <div className="stats-grid">
+            <div className="stat-box">
+              <div className="stat-label">TOTAL STUDY TIME</div>
+              <div className="stat-value" style={{ color: '#2ed573' }}>
+                {profileData.total_time} <span style={{ fontSize: '1rem' }}>MIN</span>
+              </div>
+            </div>
+            <div className="stat-box highlight-box">
+              <div className="stat-label" style={{ color: '#ffd700' }}>PUZZLE HIGH SCORE</div>
+              <div className="stat-value" style={{ color: '#ffd700', textShadow: '0 0 15px rgba(255, 215, 0, 0.5)' }}>
+                {profileData.high_score.toLocaleString()}
+              </div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-label">BOMB STOCK</div>
+              <div className="stat-value" style={{ color: '#ff4757' }}>
+                {profileData.bombs} <span style={{ fontSize: '1rem' }}>UNITS</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="chart-container">
+            <h3 style={{
+              fontSize: '14px', // 必要に応じて少し小さく（12pxなど）
+              color: 'white',
+              whiteSpace: 'nowrap', /* ← これを追加！絶対に改行させない */
+              overflow: 'hidden',   /* 念のためはみ出した分を隠す（もしくは textOverflow: 'ellipsis'） */
+              letterSpacing: '0.1em'
+            }}>
+              [ SUBJECT ANALYSIS ]
+            </h3>
+            <div style={{ width: '100%', height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={profileData.study_stats} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                  {/* ★ グラフのキーを subject と minutes に修正！ */}
+                  <XAxis dataKey="subject" stroke="rgba(255,255,255,0.5)" tick={{ fill: 'white', fontFamily: 'monospace' }} />
+                  <YAxis stroke="rgba(255,255,255,0.5)" tick={{ fill: 'white', fontFamily: 'monospace' }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="minutes" radius={[4, 4, 0, 0]}>
+                    {profileData.study_stats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={accentColor} style={{ filter: `drop-shadow(0px 0px 5px ${accentColor})` }} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+        </div>
+      )}
+
       <style>{`
-        .btn-back {
-          position: absolute;
-          top: 30px;
-          left: 40px;
-          background: transparent;
-          color: #d1d5db;
-          border: none;
-          font-family: 'Helvetica Neue', Arial, sans-serif;
-          font-size: 26px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.3s ease;
-          padding: 10px;
-          letter-spacing: 0.05em;
-        }
-        .btn-back:hover {
-          color: white;
-          transform: translateX(-5px);
-          text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
-        }
+        .btn-back { position: absolute; top: 30px; left: 40px; background: transparent; color: #d1d5db; border: none; font-size: 26px; font-weight: 500; cursor: pointer; transition: all 0.3s ease; padding: 10px; letter-spacing: 0.05em; }
+        .btn-back:hover { color: white; transform: translateX(-5px); text-shadow: 0 0 10px rgba(255, 255, 255, 0.4); }
+        .profile-board { width: 900px; max-width: 95%; display: flex; flexDirection: column; gap: 30px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat-box { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; padding: 25px; text-align: center; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); }
+        .highlight-box { border-color: rgba(255, 215, 0, 0.5); background: rgba(255, 215, 0, 0.05); transform: scale(1.05); z-index: 10; }
+        .stat-label { font-family: 'Courier New', monospace; font-size: 0.9rem; color: rgba(255,255,255,0.6); margin-bottom: 10px; letter-spacing: 0.1em; }
+        .stat-value { font-family: 'Courier New', monospace; font-size: 2.5rem; font-weight: bold; }
+        .chart-container { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; padding: 30px; box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); }
       `}</style>
     </div>
   );
