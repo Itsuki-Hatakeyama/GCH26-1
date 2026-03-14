@@ -72,18 +72,47 @@ export default function PuzzleBoard({ onBack, userId }) {
     }).catch(() => {});
   };
 
-  // 盤面に「消せるブロック」が残っているか判定
+  // 🌟 完璧な手詰まり判定ロジックに修正！
+  // 盤面のどこかに「3つ以上繋がっている通常ブロック」があるかを探す
   const hasAvailableMoves = (currentBoard) => {
-    for (let y = 0; y < currentBoard.length; y++) {
-      for (let x = 0; x < currentBoard[y].length; x++) {
+    const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
         const color = currentBoard[y][x].color;
-        if (color >= 1 && color <= 4) {
-          if (x + 1 < currentBoard[y].length && currentBoard[y][x + 1].color === color) return true;
-          if (y + 1 < currentBoard.length && currentBoard[y + 1][x].color === color) return true;
+        // 透明(0)や岩(5)、または既に探索済みの場合はスキップ
+        if (color === 0 || color === 5 || visited[y][x]) continue;
+
+        let connectedCount = 0;
+        const stack = [{ cx: x, cy: y }];
+        visited[y][x] = true;
+
+        // DFS（深さ優先探索）で繋がっている数をカウント
+        while (stack.length > 0) {
+          const { cx, cy } = stack.pop();
+          connectedCount++;
+
+          const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // 上下左右
+          for (const [dx, dy] of directions) {
+            const nx = cx + dx;
+            const ny = cy + dy;
+
+            if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+              if (!visited[ny][nx] && currentBoard[ny][nx].color === color) {
+                visited[ny][nx] = true;
+                stack.push({ cx: nx, cy: ny });
+              }
+            }
+          }
+        }
+
+        // 3つ以上繋がっている場所が1つでもあれば、まだ消せる！
+        if (connectedCount >= 3) {
+          return true;
         }
       }
     }
-    return false; 
+    return false; // 盤面をすべて探したけど、3つ以上繋がっている場所がなかった
   };
 
   // タイマー進行と時間切れ判定
@@ -100,17 +129,18 @@ export default function PuzzleBoard({ onBack, userId }) {
   useEffect(() => {
     if (isGameStarted && !isGameOver && board.length > 0) {
       const canMove = hasAvailableMoves(board);
+      // 動かせるブロックがなく、ボムも無いならゲームオーバー
       if (!canMove && bombCount <= 0) {
-        handleGameOver("NO MORE MOVES...");
+        handleGameOver("GAME OVER");
       }
     }
   }, [board, bombCount, isGameStarted, isGameOver]);
 
-  // 🌟 一定間隔（4秒）で岩ブロックを降らせる処理
+  // 一定間隔（4秒）で岩ブロックを降らせる処理
   useEffect(() => {
     if (!isGameStarted || isGameOver || isPaused) return;
 
-    const ROCK_INTERVAL_MS = 4000; 
+    const ROCK_INTERVAL_MS = 3000; 
 
     const rockInterval = setInterval(() => {
       setBoard(prevBoard => {
@@ -192,24 +222,17 @@ export default function PuzzleBoard({ onBack, userId }) {
       const clickY = rect.top + rect.height / 2;
 
       if (wasBombAction) {
-        playSound('bomb'); // 💥 爆発音
-        shakeScreen(true); // 💥 激しい画面揺れ
-        particleEngine.emit(clickX, clickY, targetColor, true); // 💥 大爆発エフェクト
-
-        // ボムの時はド派手に「+〇」と出す （earnedScoreを表示してもいいかも）
-        particleEngine.emitText(clickX, clickY, `+${removedCount}`, '#ffffff', true); 
-
+        playSound('bomb'); 
+        shakeScreen(true); 
+        particleEngine.emit(clickX, clickY, targetColor, true); 
       } else {
-        // コンボ数に応じて音を高くするピッチアップ処理
-        playSound('pop', comboCount);
-        shakeScreen(false); // ✨ 軽い画面揺れ
-        particleEngine.emit(clickX, clickY, targetColor, false); // ✨ 星が弾けるエフェクト
-        // 通常は「〇」と消した数だけを出す
-        particleEngine.emitText(clickX, clickY, `${removedCount}`, targetColor, false); 
+        playSound('pop'); 
+        shakeScreen(false); 
+        particleEngine.emit(clickX, clickY, targetColor, false); 
       }
 
-      // 既存の盤面更新と落下処理
       setBoard(resultBoard);
+
       setComboCount(prev => prev + 1);
       if (comboTimerRef.current) {
         clearTimeout(comboTimerRef.current);
@@ -242,18 +265,6 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   return (
     <div className="puzzle-screen game-container" style={styles.screenContainer}>
-
-      {/* Google Fonts「VT323」（楽しいフォント）の読み込み */}
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-        `}
-      </style>
-
-      {/* Google Fontsの読み込み */}
-      <style>
-        {`@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');`}
-      </style>
       
       <div onClick={onBack} style={styles.backButton}>← HOME</div>
 
@@ -273,7 +284,6 @@ export default function PuzzleBoard({ onBack, userId }) {
         <div style={styles.infoDisplay}>
           <div style={styles.scoreText}>SCORE: {score}</div>
           <div style={styles.bombText}>💣: {bombCount}</div>
-          {/* 🌟 修正ポイント：&& を消して visibility で表示・非表示を切り替える */}
           <div style={{
             ...styles.comboContainer,
             visibility: comboCount > 0 ? 'visible' : 'hidden'
@@ -375,6 +385,7 @@ export default function PuzzleBoard({ onBack, userId }) {
       {isGameOver && (
         <div style={styles.overlay}>
           <div style={styles.gameOverPanel}>
+            {/* 時間切れの場合は「TIME UP!」、手詰まりの場合は「NO MORE MOVES...」と表示されます */}
             <h1 style={styles.timeUpText}>{gameOverReason}</h1>
             <h2 style={styles.finalScoreText}>Score: {score}</h2>
             <button onClick={onBack} style={styles.goHomeBtn}>ホームへ戻る</button>
@@ -406,10 +417,10 @@ const styles = {
   scoreText: { fontSize: '28px', fontWeight: 'bold', color: '#1e90ff', textShadow: '0 0 5px rgba(30, 144, 255, 0.7)' },
   bombText: { fontSize: '28px', fontWeight: 'bold', color: '#f1f2f6', textShadow: '0 0 5px rgba(241, 242, 246, 0.7)' },
   
-  // PuzzleBoard.jsx の styles の一部を変更
   comboContainer: { display: 'flex', alignItems: 'baseline', gap: '8px' },
-  comboText: { fontFamily: '"Press Start 2P", cursive', fontSize: '16px', color: '#ffa502', textShadow: '0 0 8px rgba(255, 165, 2, 0.8)' },
-  multiplierText: { fontFamily: '"Press Start 2P", cursive', fontSize: '14px', color: '#ff4757', textShadow: '0 0 8px rgba(255, 71, 87, 0.8)' },
+  comboText: { fontSize: '24px', fontWeight: 'bold', color: '#ffa502', textShadow: '0 0 8px rgba(255, 165, 2, 0.8)' },
+  multiplierText: { fontSize: '22px', fontWeight: 'bold', color: '#ff4757', textShadow: '0 0 8px rgba(255, 71, 87, 0.8)' },
+
   boardPanel: {
     padding: '15px', backgroundColor: 'rgba(0, 0, 0, 0.5)', 
     borderRadius: '16px', border: '3px solid #1e90ff', 
