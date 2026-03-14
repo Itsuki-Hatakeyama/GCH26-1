@@ -211,17 +211,24 @@ export default function PuzzleBoard({ onBack, userId }) {
       const clickY = rect.top + rect.height / 2;
 
       if (wasBombAction) {
-        playSound('bomb'); 
-        shakeScreen(true); 
-        particleEngine.emit(clickX, clickY, targetColor, true); 
+        playSound('bomb'); // 💥 爆発音
+        shakeScreen(true); // 💥 激しい画面揺れ
+        particleEngine.emit(clickX, clickY, targetColor, true); // 💥 大爆発エフェクト
+
+        // ボムの時はド派手に「+〇」と出す （earnedScoreを表示してもいいかも）
+        particleEngine.emitText(clickX, clickY, `+${removedCount}`, '#ffffff', true); 
+
       } else {
+        // コンボ数に応じて音を高くするピッチアップ処理
         playSound('pop', comboCount);
-        shakeScreen(false); 
-        particleEngine.emit(clickX, clickY, targetColor, false); 
+        shakeScreen(false); // ✨ 軽い画面揺れ
+        particleEngine.emit(clickX, clickY, targetColor, false); // ✨ 星が弾けるエフェクト
+        // 通常は「〇」と消した数だけを出す
+        particleEngine.emitText(clickX, clickY, `${removedCount}`, targetColor, false); 
       }
 
+      // 既存の盤面更新と落下処理
       setBoard(resultBoard);
-
       setComboCount(prev => prev + 1);
       if (comboTimerRef.current) {
         clearTimeout(comboTimerRef.current);
@@ -254,6 +261,18 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   return (
     <div className="puzzle-screen game-container" style={styles.screenContainer}>
+
+      {/* Google Fonts「VT323」（楽しいフォント）の読み込み */}
+      <style>
+        {`
+          @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+        `}
+      </style>
+
+      {/* Google Fontsの読み込み */}
+      <style>
+        {`@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');`}
+      </style>
       
       <div onClick={onBack} style={styles.backButton}>← HOME</div>
 
@@ -406,18 +425,8 @@ const styles = {
   
   // PuzzleBoard.jsx の styles の一部を変更
   comboContainer: { display: 'flex', alignItems: 'baseline', gap: '8px' },
-  comboText: { 
-    fontFamily: '"Bungee", cursive', // アーケード風極太フォント
-    fontSize: '32px', 
-    color: '#ffa502', 
-    textShadow: '0 0 10px rgba(255, 165, 2, 0.9), 2px 2px 0px #b33939' // 影を濃くして立体感を出す
-  },
-  multiplierText: { 
-    fontFamily: '"Bungee", cursive', 
-    fontSize: '28px', 
-    color: '#ff4757', 
-    textShadow: '0 0 10px rgba(255, 71, 87, 0.9), 2px 2px 0px #b33939' 
-  },
+  comboText: { fontFamily: '"Press Start 2P", cursive', fontSize: '16px', color: '#ffa502', textShadow: '0 0 8px rgba(255, 165, 2, 0.8)' },
+  multiplierText: { fontFamily: '"Press Start 2P", cursive', fontSize: '14px', color: '#ff4757', textShadow: '0 0 8px rgba(255, 71, 87, 0.8)' },
   boardPanel: {
     padding: '15px', backgroundColor: 'rgba(0, 0, 0, 0.5)', 
     borderRadius: '16px', border: '3px solid #1e90ff', 
