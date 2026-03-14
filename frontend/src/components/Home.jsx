@@ -54,7 +54,7 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
           lineHeight: '1.1',
           marginBottom: '10px' 
         }}>
-          DRYOKU<br />& PUZZLE
+          PUZZLE<br />&< br /> DRYOKU's
         </h1>
         
         <p style={{ 
@@ -83,6 +83,12 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
             </button>
             <button className="btn-cyber-sub" onClick={() => onNavigate('ranking')}>
               [ 03. RANKING ]
+            </button>
+            <button 
+              className="btn-cyber-sub" 
+              onClick={() => onNavigate('missions')}
+            >
+              [ 04. MISSIONS ]
             </button>
           </div>
         </div>

@@ -7,7 +7,8 @@ import Timer from './components/Timer';
 import Ranking from './components/Ranking';
 import PuzzleBoard from './components/PuzzleBoard';
 import Profile from './components/Profile';
-import Friends from './components/Friend'; // ★ 追加：Friendsを読み込む
+import Friends from './components/Friend'; 
+import Missions from './components/Missions';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -63,6 +64,10 @@ function App() {
   // ★ 追加：⑥ フレンド（ネットワーク）画面
   if (view === 'friends') {
     return <Friends onBack={() => setView('home')} currentUser={currentUser} />;
+  }
+
+  if (view === 'missions') {
+    return <Missions onBack={() => setView('home')} currentUser={currentUser} />;
   }
 
   return null;
