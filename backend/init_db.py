@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from werkzeug.security import generate_password_hash # 追加：パスワード暗号化ツール
+from werkzeug.security import generate_password_hash
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'hackathon.db')
@@ -9,20 +9,19 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # 開発用：既存の古いusersテーブルがあれば一度削除して作り直す
     c.execute('DROP TABLE IF EXISTS users')
 
-    # users テーブルの作成（password列を追加！）
+    # users テーブル
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             password TEXT NOT NULL,
             study_minutes INTEGER DEFAULT 0,
-            bomb_count INTEGER DEFAULT 0
+            bomb_count INTEGER DEFAULT 0 -- ※過去の互換性のために残しますが、今後は使いません
         )
     ''')
 
-    # scores テーブルの作成
+    # scores テーブル
     c.execute('''
         CREATE TABLE IF NOT EXISTS scores (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,39 +31,48 @@ def init_db():
         )
     ''')
 
-    # friends テーブルの作成（申請・承認ステータス付き）
+    # friends テーブル
     c.execute('''
         CREATE TABLE IF NOT EXISTS friends (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT,      -- 申請を送った人
-            friend_id TEXT,    -- 申請を受け取る人
-            status TEXT DEFAULT 'pending', -- 'pending'(申請中) または 'accepted'(承認済み)
+            user_id TEXT,
+            friend_id TEXT,
+            status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id, friend_id)
         )
     ''')
 
-    # study_logs テーブルの作成（新規追加：タスク②用）
+    # study_logs テーブル
     c.execute('''
         CREATE TABLE IF NOT EXISTS study_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT,
-            subject_name TEXT, -- 教材名や科目名（例：「基本情報技術者」「数学」など）
+            subject_name TEXT,
             study_minutes INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
 
-    # daily_rewards テーブルの作成（新規追加：タスク③ デイリー報酬の受け取り履歴）
+    # daily_rewards テーブル
     c.execute('''
         CREATE TABLE IF NOT EXISTS daily_rewards (
             user_id TEXT,
-            reward_date TEXT, -- 'YYYY-MM-DD' の形式で保存
+            reward_date TEXT,
             PRIMARY KEY (user_id, reward_date)
         )
     ''')
 
-    # 開発テスト用に、初期ユーザーを1人登録しておく（パスワードはハッシュ化して保存）
+    # 🌟 新規追加：bombs テーブル（3日で消えるボムを個別に管理！）
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS bombs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id TEXT,
+            expires_at TIMESTAMP -- 有効期限（獲得から3日後）
+        )
+    ''')
+
+    # 初期ユーザー
     test_password = generate_password_hash("password123")
     c.execute('INSERT OR IGNORE INTO users (id, password, study_minutes, bomb_count) VALUES (?, ?, 0, 0)', ("user_123", test_password))
 
