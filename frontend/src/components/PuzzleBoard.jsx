@@ -31,6 +31,7 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   const [comboCount, setComboCount] = useState(0);
   const comboTimerRef = useRef(null);
+  const [popups, setPopups] = useState([]);
 
   const API_BASE = "http://127.0.0.1:5000";
 
@@ -40,7 +41,7 @@ export default function PuzzleBoard({ onBack, userId }) {
     };
   }, []);
 
-  // 初期化とボム所持数の取得
+  // 🌟 バックエンド新仕様対応：インベントリ取得
   useEffect(() => {
     particleEngine.init();
     setBoard(createBoard());
@@ -51,7 +52,10 @@ export default function PuzzleBoard({ onBack, userId }) {
         const response = await fetch(`${API_BASE}/api/user/inventory?user_id=${userId}`);
         if (response.ok) {
           const data = await response.json();
-          setBombCount(data.items?.bomb || 0); 
+          // API側で「有効期限内のボム」だけを計算して返してくれるので、そのままセット！
+          // ※バックエンドのJSONの形が data.items.bomb 以外に変わっていても拾えるように安全対策
+          const validBombs = data.items?.bomb ?? data.bomb_count ?? data.valid_bombs ?? 0;
+          setBombCount(validBombs); 
         }
       } catch (error) {
         console.error('🔌 通信エラー:', error);
@@ -60,7 +64,6 @@ export default function PuzzleBoard({ onBack, userId }) {
     fetchInventory();
   }, [userId]);
 
-  // ゲームオーバー処理
   const handleGameOver = (reason) => {
     setGameOverReason(reason);
     setIsGameOver(true);
@@ -72,27 +75,23 @@ export default function PuzzleBoard({ onBack, userId }) {
     }).catch(() => {});
   };
 
-  // 🌟 完璧な手詰まり判定ロジックに修正！
-  // 盤面のどこかに「3つ以上繋がっている通常ブロック」があるかを探す
   const hasAvailableMoves = (currentBoard) => {
     const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
 
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
         const color = currentBoard[y][x].color;
-        // 透明(0)や岩(5)、または既に探索済みの場合はスキップ
         if (color === 0 || color === 5 || visited[y][x]) continue;
 
         let connectedCount = 0;
         const stack = [{ cx: x, cy: y }];
         visited[y][x] = true;
 
-        // DFS（深さ優先探索）で繋がっている数をカウント
         while (stack.length > 0) {
           const { cx, cy } = stack.pop();
           connectedCount++;
 
-          const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // 上下左右
+          const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]]; 
           for (const [dx, dy] of directions) {
             const nx = cx + dx;
             const ny = cy + dy;
@@ -106,16 +105,14 @@ export default function PuzzleBoard({ onBack, userId }) {
           }
         }
 
-        // 3つ以上繋がっている場所が1つでもあれば、まだ消せる！
         if (connectedCount >= 3) {
           return true;
         }
       }
     }
-    return false; // 盤面をすべて探したけど、3つ以上繋がっている場所がなかった
+    return false; 
   };
 
-  // タイマー進行と時間切れ判定
   useEffect(() => {
     if (isGameStarted && timeLeft > 0 && !isGameOver && !isPaused) {
       const timerId = setInterval(() => setTimeLeft((t) => t - 1), 1000);
@@ -125,22 +122,19 @@ export default function PuzzleBoard({ onBack, userId }) {
     }
   }, [isGameStarted, timeLeft, isGameOver, isPaused]);
 
-  // 手詰まり（詰み）の監視
   useEffect(() => {
     if (isGameStarted && !isGameOver && board.length > 0) {
       const canMove = hasAvailableMoves(board);
-      // 動かせるブロックがなく、ボムも無いならゲームオーバー
       if (!canMove && bombCount <= 0) {
-        handleGameOver("GAME OVER");
+        handleGameOver("GAME OVER!");
       }
     }
   }, [board, bombCount, isGameStarted, isGameOver]);
 
-  // 一定間隔（4秒）で岩ブロックを降らせる処理
   useEffect(() => {
     if (!isGameStarted || isGameOver || isPaused) return;
 
-    const ROCK_INTERVAL_MS = 3000; 
+    const ROCK_INTERVAL_MS = 4000; 
 
     const rockInterval = setInterval(() => {
       setBoard(prevBoard => {
@@ -157,7 +151,7 @@ export default function PuzzleBoard({ onBack, userId }) {
 
         if (validTargets.length > 0) {
           const rand = validTargets[Math.floor(Math.random() * validTargets.length)];
-          newBoard[rand.y][rand.x].color = 5; // 岩ブロック
+          newBoard[rand.y][rand.x].color = 5; 
           playSound('bomb'); 
           shakeScreen(false); 
         }
@@ -196,6 +190,8 @@ export default function PuzzleBoard({ onBack, userId }) {
       setIsBombMode(false);
       setHoveredBlock({ x: -1, y: -1 });
 
+      // 🌟 バックエンド新仕様対応：ボム消費API
+      // APIを叩くだけで、裏側で勝手に「一番古いボム」から消費してくれます！フロントは楽チン！
       fetch(`${API_BASE}/api/game/use_bomb`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,6 +227,19 @@ export default function PuzzleBoard({ onBack, userId }) {
         particleEngine.emit(clickX, clickY, targetColor, false); 
       }
 
+      const popupId = Date.now() + Math.random();
+      setPopups(prev => [...prev, {
+        id: popupId,
+        x: x * 56 + 25, 
+        y: y * 56 + 25, 
+        count: removedCount,
+        color: targetColor === 'transparent' ? '#ffffff' : targetColor
+      }]);
+
+      setTimeout(() => {
+        setPopups(prev => prev.filter(p => p.id !== popupId));
+      }, 800);
+
       setBoard(resultBoard);
 
       setComboCount(prev => prev + 1);
@@ -265,7 +274,16 @@ export default function PuzzleBoard({ onBack, userId }) {
 
   return (
     <div className="puzzle-screen game-container" style={styles.screenContainer}>
-      
+      <style>
+        {`
+          @keyframes floatUpFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -100%) scale(1.3); }
+            100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
+          }
+        `}
+      </style>
+
       <div onClick={onBack} style={styles.backButton}>← HOME</div>
 
       <div style={styles.header}>
@@ -283,7 +301,7 @@ export default function PuzzleBoard({ onBack, userId }) {
 
         <div style={styles.infoDisplay}>
           <div style={styles.scoreText}>SCORE: {score}</div>
-          <div style={styles.bombText}>💣: {bombCount}</div>
+          <div style={styles.bombText}>💣: {bombCount} <span style={{fontSize: '14px', color: '#ccc'}}>(有効)</span></div>
           <div style={{
             ...styles.comboContainer,
             visibility: comboCount > 0 ? 'visible' : 'hidden'
@@ -337,6 +355,23 @@ export default function PuzzleBoard({ onBack, userId }) {
               );
             })
           )}
+
+          {popups.map(popup => (
+            <div key={popup.id} style={{
+              position: 'absolute',
+              left: `${popup.x}px`,
+              top: `${popup.y}px`,
+              pointerEvents: 'none',
+              zIndex: 10,
+              color: popup.color,
+              fontSize: '32px',
+              fontWeight: '900',
+              textShadow: '0px 0px 5px rgba(255,255,255,1), 0px 0px 10px rgba(0,0,0,0.8)',
+              animation: 'floatUpFade 0.8s ease-out forwards',
+            }}>
+              +{popup.count}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -385,7 +420,6 @@ export default function PuzzleBoard({ onBack, userId }) {
       {isGameOver && (
         <div style={styles.overlay}>
           <div style={styles.gameOverPanel}>
-            {/* 時間切れの場合は「TIME UP!」、手詰まりの場合は「NO MORE MOVES...」と表示されます */}
             <h1 style={styles.timeUpText}>{gameOverReason}</h1>
             <h2 style={styles.finalScoreText}>Score: {score}</h2>
             <button onClick={onBack} style={styles.goHomeBtn}>ホームへ戻る</button>
