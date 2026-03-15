@@ -71,7 +71,6 @@ def finish_pomodoro():
     data = request.get_json()
     user_id = data.get('user_id')
     study_minutes = data.get('study_minutes', 25)
-    # ★追加：フロントから「教材名」も受け取る（無ければ「その他」にする）
     subject_name = data.get('subject_name', 'その他')
 
     if not user_id:
@@ -87,24 +86,34 @@ def finish_pomodoro():
         conn.close()
         return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
 
-    # 1. 今まで通り、usersテーブルの累計時間とボムを増やす
+    # 1. usersテーブルの累計時間だけを増やす（ボムはここで増やさない）
     c.execute('''
         UPDATE users 
-        SET study_minutes = COALESCE(study_minutes, 0) + ?, 
-            bomb_count = COALESCE(bomb_count, 0) + ?
+        SET study_minutes = COALESCE(study_minutes, 0) + ?
         WHERE id = ?
-    ''', (study_minutes, 1, user_id))
+    ''', (study_minutes, user_id))
     
-    # ★追加：2. study_logsテーブルに「何を何分勉強したか」を記録する
+    # 2. study_logsテーブルに学習記録を追加
     c.execute('''
         INSERT INTO study_logs (user_id, subject_name, study_minutes)
         VALUES (?, ?, ?)
     ''', (user_id, subject_name, study_minutes))
 
+    # 🌟 3. bombsテーブルに「3日後の有効期限付き」でボムを追加！
+    c.execute('''
+        INSERT INTO bombs (user_id, expires_at) 
+        VALUES (?, datetime('now', 'localtime', '+3 days'))
+    ''', (user_id,))
+
     conn.commit()
 
-    c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
+    # 🌟 4. 最新の「有効なボムの数」を計算してフロントに返す
+    c.execute('''
+        SELECT COUNT(*) as valid_bombs FROM bombs 
+        WHERE user_id = ? AND expires_at > datetime('now', 'localtime')
+    ''', (user_id,))
     updated_user = c.fetchone()
+    current_bombs = updated_user['valid_bombs'] if updated_user else 0
     conn.close()
 
     return jsonify({
@@ -112,7 +121,7 @@ def finish_pomodoro():
         "reward": {
             "item_type": "bomb",
             "amount_given": 1,
-            "total_bombs_owned": updated_user['bomb_count']
+            "total_bombs_owned": current_bombs
         }
     })
 
@@ -121,18 +130,26 @@ def finish_pomodoro():
 def get_inventory():
     user_id = request.args.get('user_id')
     
+    if not user_id:
+        return jsonify({"status": "error", "message": "user_idは必須です"}), 400
+
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
-    user = c.fetchone()
+    
+    # 🌟 bombsテーブルから「有効期限内のボム」だけを数える
+    c.execute('''
+        SELECT COUNT(*) as valid_bombs FROM bombs 
+        WHERE user_id = ? AND expires_at > datetime('now', 'localtime')
+    ''', (user_id,))
+    bomb_record = c.fetchone()
+    current_bombs = bomb_record['valid_bombs'] if bomb_record else 0
+    
     conn.close()
-
-    bomb_count = user['bomb_count'] if user else 0
 
     return jsonify({
         "status": "success",
         "user_id": user_id,
-        "items": {"bomb": bomb_count}
+        "items": {"bomb": current_bombs} # 🌟 計算した最新のボム数を返す！
     })
 
 # プロフィール情報（累計、ボム、ハイスコア、教材別データ）の取得
@@ -146,20 +163,28 @@ def get_profile():
     conn = get_db_connection()
     c = conn.cursor()
     
-    # 1. ユーザーの基本情報（累計時間とボム）
-    c.execute('SELECT study_minutes, bomb_count FROM users WHERE id = ?', (user_id,))
+    # 1. ユーザーの基本情報（累計時間）※古いbomb_countはもう見ません
+    c.execute('SELECT study_minutes FROM users WHERE id = ?', (user_id,))
     user = c.fetchone()
 
     if not user:
         conn.close()
         return jsonify({"status": "error", "message": "ユーザーが見つかりません"}), 404
 
-    # ★タスク①：2. これまでのハイスコアを取得
+    # 🌟 2. bombsテーブルから「有効期限内のボム」だけを数える
+    c.execute('''
+        SELECT COUNT(*) as valid_bombs FROM bombs 
+        WHERE user_id = ? AND expires_at > datetime('now', 'localtime')
+    ''', (user_id,))
+    bomb_record = c.fetchone()
+    current_bombs = bomb_record['valid_bombs'] if bomb_record else 0
+
+    # 3. ハイスコアを取得
     c.execute('SELECT MAX(score) as max_score FROM scores WHERE user_id = ?', (user_id,))
     score_record = c.fetchone()
     high_score = score_record['max_score'] if score_record['max_score'] else 0
 
-    # ★タスク②：3. 教材(subject_name)ごとの合計勉強時間を取得（グラフ用）
+    # 4. 教材(subject_name)ごとの合計勉強時間を取得
     c.execute('''
         SELECT subject_name, SUM(study_minutes) as total_minutes
         FROM study_logs
@@ -168,8 +193,6 @@ def get_profile():
         ORDER BY total_minutes DESC
     ''', (user_id,))
     logs = c.fetchall()
-    
-    # フロントが扱いやすいようにリスト形式に変換
     study_stats = [{"subject": row["subject_name"], "minutes": row["total_minutes"]} for row in logs]
 
     conn.close()
@@ -178,9 +201,9 @@ def get_profile():
         "status": "success",
         "user_id": user_id,
         "study_minutes": user['study_minutes'] or 0,
-        "bomb_count": user['bomb_count'] or 0,
-        "high_score": high_score,         # 追加！
-        "study_stats": study_stats        # 追加！
+        "bomb_count": current_bombs,      # 🌟 計算した最新のボム数を返す！
+        "high_score": high_score,
+        "study_stats": study_stats
     })
 
 # ==========================================
@@ -339,7 +362,7 @@ def get_friends():
         "pending_requests": pending_requests
     })
 
-# ⑪ ボム消費API (POST)
+# ボム消費API (POST) - 有効期限対応版
 @app.route('/api/game/use_bomb', methods=['POST'])
 def use_bomb():
     data = request.get_json()
@@ -351,31 +374,37 @@ def use_bomb():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # 現在のボムの数を確認
-    c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
-    user = c.fetchone()
-
-    # ボムを持っていない場合はエラーを返す
-    if not user or user['bomb_count'] <= 0:
-        conn.close()
-        return jsonify({"status": "error", "message": "ボムが足りません"}), 400
-
-    # ボムを1つ減らす (NULL対策済み)
+    # 🌟 1. 有効期限内のボムの中で、一番期限が近い（古い）ボムのIDを探す
     c.execute('''
-        UPDATE users 
-        SET bomb_count = COALESCE(bomb_count, 0) - 1 
-        WHERE id = ?
+        SELECT id FROM bombs 
+        WHERE user_id = ? AND expires_at > datetime('now', 'localtime')
+        ORDER BY expires_at ASC
+        LIMIT 1
     ''', (user_id,))
+    oldest_bomb = c.fetchone()
+
+    # ボムがない、または全て期限切れの場合
+    if not oldest_bomb:
+        conn.close()
+        return jsonify({"status": "error", "message": "有効なボムがありません"}), 400
+
+    # 🌟 2. 見つかったボムを1つ削除（消費）する
+    c.execute('DELETE FROM bombs WHERE id = ?', (oldest_bomb['id'],))
     conn.commit()
 
-    c.execute('SELECT bomb_count FROM users WHERE id = ?', (user_id,))
-    updated_user = c.fetchone()
+    # 🌟 3. 残りのボムの数を再計算して返す
+    c.execute('''
+        SELECT COUNT(*) as valid_bombs FROM bombs 
+        WHERE user_id = ? AND expires_at > datetime('now', 'localtime')
+    ''', (user_id,))
+    remaining = c.fetchone()['valid_bombs']
+    
     conn.close()
 
     return jsonify({
         "status": "success",
         "message": "ボムを1つ消費しました",
-        "remaining_bombs": updated_user['bomb_count']
+        "remaining_bombs": remaining
     })
 
 # ==========================================
@@ -432,7 +461,6 @@ def claim_daily_reward():
     conn = get_db_connection()
     c = conn.cursor()
 
-    # ① 今日の勉強時間を再確認（不正アクセス防止）
     c.execute('''
         SELECT SUM(study_minutes) as today_minutes 
         FROM study_logs 
@@ -441,30 +469,28 @@ def claim_daily_reward():
     row = c.fetchone()
     today_minutes = row['today_minutes'] if row['today_minutes'] else 0
 
-    target_minutes = 100  # デイリーミッションの目標時間（ここは先ほどと同じ値にすること！）
+    target_minutes = 100 
 
     if today_minutes < target_minutes:
         conn.close()
         return jsonify({"status": "error", "message": "まだミッションをクリアしていません"}), 400
 
     try:
-        # ② 報酬履歴に「今日受け取ったよ」と記録する
+        # 報酬履歴に記録
         c.execute('''
             INSERT INTO daily_rewards (user_id, reward_date) 
             VALUES (?, date('now', 'localtime'))
         ''', (user_id,))
         
-        # ③ ボムを1個増やす！
+        # 🌟 ボムを「3日後の有効期限付き」で追加！
         c.execute('''
-            UPDATE users 
-            SET bomb_count = COALESCE(bomb_count, 0) + 1 
-            WHERE id = ?
+            INSERT INTO bombs (user_id, expires_at) 
+            VALUES (?, datetime('now', 'localtime', '+3 days'))
         ''', (user_id,))
         
         conn.commit()
         return jsonify({"status": "success", "message": "デイリーミッション達成！ボムを獲得しました！"}), 200
     except sqlite3.IntegrityError:
-        # すでに今日の記録がある場合（2回押された場合など）
         return jsonify({"status": "error", "message": "今日の報酬はすでに受け取り済みです"}), 409
     finally:
         conn.close()
