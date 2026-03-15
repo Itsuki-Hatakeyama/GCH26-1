@@ -77,7 +77,7 @@ export default function Home({ onNavigate, currentUser, onLogout }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', alignItems: 'center' }}>
           <button className="btn-cyber-main" onClick={() => onNavigate('timer')}>
-            [ 01. START MISSION ]
+            [ 01. START TIMER ]
           </button>
           
           <div style={{ display: 'flex', gap: '20px' }}>
