@@ -78,16 +78,20 @@ export default function Timer({ onBack, currentUser }) {
           })
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          if (data.bomb_count !== undefined) {
-             setBombs(data.bomb_count); 
-          } else {
-             setBombs(prev => prev + 1);
-          }
-          setCompletedCount(prev => prev + 1); 
-          console.log(`ミッション完了！DBに保存しました。[TARGET: ${targetSubject}]`);
-        } else {
+    if (response.ok) {
+      const data = await response.json();
+  
+      // 🌟 APIの新しいJSONの形に合わせて、reward.total_bombs_owned を見に行く
+      if (data.reward && data.reward.total_bombs_owned !== undefined) {
+         setBombs(data.reward.total_bombs_owned); 
+     } else {
+     // 万が一データがうまく取れなかった時の保険
+         setBombs(prev => prev + 1);
+      }
+  
+      setCompletedCount(prev => prev + 1); 
+      console.log(`ミッション完了！DBに保存しました。[TARGET: ${targetSubject}]`);
+    } else {
           throw new Error("APIエラー");
         }
       } catch (error) {

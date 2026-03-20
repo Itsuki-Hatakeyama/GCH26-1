@@ -3,27 +3,32 @@ import React, { useState, useEffect } from 'react';
 export default function Missions({ onBack, currentUser }) {
   const accentColor = '#38bdf8';
   
-  // APIから取得したデータを保存する状態
   const [missionData, setMissionData] = useState({
-    study_time: 0,
-    target_time: 0,
+    today_minutes: 0,
+    target_minutes: 100,
     is_cleared: false,
     is_claimed: false
   });
   const [loading, setLoading] = useState(true);
 
-  // 画面が開かれたときにAPIからデータを取得する
   useEffect(() => {
     fetchMissionData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // [12] デイリー進捗確認 (GET)
   const fetchMissionData = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/missions/daily?user_id=${currentUser.id}`);
+      // ★ 修正点1: Timerと同じ 127.0.0.1 に統一
+      // ★ 修正点2: cache: 'no-store' でブラウザの記憶を無視し、常に最新をDBから取得する！
+      const response = await fetch(`http://127.0.0.1:5000/api/missions/daily?user_id=${currentUser.id}`, {
+        cache: 'no-store'
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setMissionData(data);
+        console.log("ミッション最新データ取得:", data);
       } else {
         console.error("ミッションデータの取得に失敗しました");
       }
@@ -37,7 +42,7 @@ export default function Missions({ onBack, currentUser }) {
   // [13] デイリー報酬受け取り (POST)
   const handleClaimReward = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/missions/claim', {
+      const response = await fetch('http://127.0.0.1:5000/api/missions/claim', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -45,16 +50,17 @@ export default function Missions({ onBack, currentUser }) {
         body: JSON.stringify({ user_id: currentUser.id }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        alert(">> MISSION COMPLETE: ボムを1個獲得しました！");
+        alert(`>> MISSION COMPLETE: ${data.message}`);
         fetchMissionData(); // 受け取った後の最新データに更新する
       } else {
-        const errorData = await response.json();
-        alert(`エラー: ${errorData.error || '報酬の受け取りに失敗しました'}`);
+        alert(`エラー: ${data.message || '報酬の受け取りに失敗しました'}`);
       }
     } catch (error) {
       console.error("通信エラー:", error);
-      alert("通信エラーが発生しました。");
+      alert("通信エラーが発生しました。サーバーが起動しているか確認してください。");
     }
   };
 
@@ -110,7 +116,7 @@ export default function Missions({ onBack, currentUser }) {
           <h3 style={{ fontSize: '1.5rem', marginBottom: '20px' }}>本日の勉強時間</h3>
           
           <div style={{ fontSize: '3rem', fontWeight: 'bold', color: accentColor, marginBottom: '10px' }}>
-            {missionData.study_time} / {missionData.target_time} <span style={{ fontSize: '1.5rem' }}>MIN</span>
+            {missionData.today_minutes} / {missionData.target_minutes} <span style={{ fontSize: '1.5rem' }}>MIN</span>
           </div>
 
           <div style={{ margin: '30px 0' }}>
